@@ -140,24 +140,24 @@ int main(int argc, char ** argv)
     std::string strOutputDirectory = "";
     std::string factoryAddr = "0x9E3F8eaE49E442A323EF2094f277Bf62752E6995";
 
-    argp.addSwitch('s', "seed", uSeed);
-    argp.addSwitch('d', "debug", bDebug);
-    argp.addSwitch('v', "version", bVersion);
-    argp.addSwitch('e', "errors", bErrorsOnly);
-    argp.addSwitch('h', "help", bHelp);
-    argp.addSwitch('b', "benchmark", benchmarkLimitTime);
-    argp.addSwitch('l', "loops", benchmarkLimitLoops);
-    argp.addSwitch('o', "output", strOutputDirectory);
-    argp.addSwitch('f', "factory", factoryAddr);
-    argp.addSwitch('k', "kernel", kernelSize);
-    argp.addSwitch('g', "groups", groups);
-    argp.addSwitch('r', "rounds", rounds);
-    argp.addSwitch('z', "public", publicKey);
-    argp.addSwitch('i', "device", device_id);
-    argp.addSwitch('n', "no_run", bNoRun);
-    argp.addSwitch('u', "niceness", nicenessParameter);
-    argp.addSwitch('p', "prefix", additionalPrefix);
     argp.addSwitch('c', "cpu", bUseCPU);
+    argp.addSwitch('b', "benchmark", benchmarkLimitTime);
+    argp.addSwitch('d', "debug", bDebug);
+    argp.addSwitch('e', "errors", bErrorsOnly);
+    argp.addSwitch('f', "factory", factoryAddr);
+    argp.addSwitch('i', "device", device_id);
+    argp.addSwitch('g', "groups", groups);
+    argp.addSwitch('h', "help", bHelp);
+    argp.addSwitch('k', "kernel", kernelSize);
+    argp.addSwitch('l', "loops", benchmarkLimitLoops);
+    argp.addSwitch('n', "no_run", bNoRun);
+    argp.addSwitch('o', "output", strOutputDirectory);
+    argp.addSwitch('p', "prefix", additionalPrefix);
+    argp.addSwitch('r', "rounds", rounds);
+    argp.addSwitch('s', "seed", uSeed);
+    argp.addSwitch('u', "niceness", nicenessParameter);
+    argp.addSwitch('v', "version", bVersion);
+    argp.addSwitch('z', "public", publicKey);
 
     if (!argp.parse()) {
         std::cout << "error: bad arguments, -h for help" << std::endl;
