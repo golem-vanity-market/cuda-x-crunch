@@ -106,6 +106,35 @@ static cl_ulong4 fromHexCLUlong(const std::string & strHex) {
 	return res;
 }
 
+std::map<std::string, std::vector<std::string>> parsePattern(const std::string& pattern) {
+    std::map<std::string, std::vector<std::string>> result;
+    std::stringstream ss(pattern);
+    std::string pair;
+
+    // Split by ';' into key=value pairs
+    while (std::getline(ss, pair, ';')) {
+        size_t eqPos = pair.find('=');
+        if (eqPos != std::string::npos) {
+            std::string key = pair.substr(0, eqPos);
+            std::string valuesStr = pair.substr(eqPos + 1);
+
+            std::vector<std::string> values;
+            std::stringstream valueStream(valuesStr);
+            std::string val;
+
+            // Split values by ','
+            while (std::getline(valueStream, val, ',')) {
+                if (!val.empty())
+                    values.push_back(val);
+            }
+
+            result[key] = values;
+        }
+    }
+
+    return result;
+}
+
 int main(int argc, char ** argv)
 {
 	std::signal(SIGINT, signalHandler);
@@ -124,6 +153,8 @@ int main(int argc, char ** argv)
     double benchmarkLimitTime = 0.0;
     double nicenessParameter = 0.0;
     uint64_t additionalPrefix = 0;
+    uint64_t additionalSuffix = 0;
+
     int benchmarkLimitLoops = 0;
     bool bNoRun = false;
     bool bDebug = false;
@@ -139,6 +170,7 @@ int main(int argc, char ** argv)
     std::string publicKey = "";
     std::string strOutputDirectory = "";
     std::string factoryAddr = "0x9E3F8eaE49E442A323EF2094f277Bf62752E6995";
+    std::string searchPattern = "";
 
     argp.addSwitch('c', "cpu", bUseCPU);
     argp.addSwitch('b', "benchmark", benchmarkLimitTime);
@@ -152,17 +184,84 @@ int main(int argc, char ** argv)
     argp.addSwitch('l', "loops", benchmarkLimitLoops);
     argp.addSwitch('n', "no_run", bNoRun);
     argp.addSwitch('o', "output", strOutputDirectory);
-    argp.addSwitch('p', "prefix", additionalPrefix);
+    argp.addSwitch('p', "pattern", searchPattern);
     argp.addSwitch('r', "rounds", rounds);
     argp.addSwitch('s', "seed", uSeed);
     argp.addSwitch('u', "niceness", nicenessParameter);
     argp.addSwitch('v', "version", bVersion);
     argp.addSwitch('z', "public", publicKey);
 
+
+
+
     if (!argp.parse()) {
         std::cout << "error: bad arguments, -h for help" << std::endl;
         return 1;
     }
+
+    auto parsed = parsePattern(searchPattern);
+    std::cout << "Parsed search pattern: " << searchPattern << std::endl;
+
+
+    bool useNoDefaults = true;
+    bool useCommon = false;
+    bool useLetters = false;
+    bool useTriples = false;
+    for (const auto& [key, values] : parsed) {
+        std::cout << key << ": ";
+        for (const auto& v : values) {
+            std::cout << v << " ";
+        }
+        std::cout << std::endl;
+
+        if (key == "no_default" && values.size() == 1 && values[0] == "1") {
+            LOG_INFO("Not processing default search pattern");
+            useNoDefaults = true;
+        }
+        if (key == "prefix" && values.size() == 1 && !values[0].empty()) {
+            try {
+                additionalPrefix = std::stoull(values[0], nullptr, 16);
+                LOG_INFO("Using additional prefix: %llu", additionalPrefix);
+            } catch (const std::exception& e) {
+                LOG_ERROR("Invalid prefix value: %s", e.what());
+                return 1;
+            }
+        }
+        if (key == "suffix" && values.size() == 1 && !values[0].empty()) {
+            try {
+                additionalSuffix = std::stoull(values[0], nullptr, 16);
+                LOG_INFO("Using additional suffix: %llu", additionalSuffix);
+            } catch (const std::exception& e) {
+                LOG_ERROR("Invalid suffix value: %s", e.what());
+                return 1;
+            }
+        }
+        if (key == "letters" && values.size() == 1 && values[0] == "1") {
+            LOG_INFO("Using letters in search pattern");
+            useLetters = true;
+        }
+        if (key == "triples" && values.size() == 1 && values[0] == "1") {
+            LOG_INFO("Using triples in search pattern");
+            useTriples = true;
+        }
+        if (key == "common" && values.size() == 1 && values[0] == "1") {
+            LOG_INFO("Using common search pattern");
+            useCommon = true;
+        }
+    }
+    if (!useNoDefaults) {
+        LOG_INFO("Using all search pattern by default");
+        useCommon = true;
+        useLetters = true;
+        useTriples = true;
+    }
+    pattern_descriptor descr = { 0 };
+    descr.use_common = useCommon;
+    descr.use_letters = useLetters;
+    descr.use_triples = useTriples;
+    descr.search_prefix = additionalPrefix;
+    descr.search_suffix = additionalSuffix;
+
     if (uSeed) {
         LOG_WARNING("Using custom seed %llx so results will be the same and not random", uSeed);
         init_random(uSeed);
@@ -290,7 +389,7 @@ int main(int argc, char ** argv)
                     break;
                 }
                 double loop_start = get_app_time_sec();
-                cpu_create3_search(&cpu_init_data, additionalPrefix);
+                cpu_create3_search(&cpu_init_data, descr);
                 double end = get_app_time_sec();
 
                 if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)
@@ -336,7 +435,7 @@ int main(int argc, char ** argv)
                     break;
                 }
                 double loop_start = get_app_time_sec();
-                create3_search(&init_data, additionalPrefix);
+                create3_search(&init_data, descr);
                 double end = get_app_time_sec();
 
                 if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)
@@ -392,7 +491,7 @@ int main(int argc, char ** argv)
                 if (g_exiting) {
                     break;
                 }
-                cpu_private_data_search(publicKey, additionalPrefix, &cpu_init_data);
+                cpu_private_data_search(publicKey, descr, &cpu_init_data);
                 double end = get_app_time_sec();
                 if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)
                     || (benchmarkLimitLoops > 0 && loop_no + 1 >= benchmarkLimitLoops)) {
@@ -439,7 +538,7 @@ int main(int argc, char ** argv)
                 if (g_exiting) {
                     break;
                 }
-                private_data_search(publicKey, additionalPrefix, &init_data);
+                private_data_search(publicKey, descr, &init_data);
                 double end = get_app_time_sec();
                 if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)
                     || (benchmarkLimitLoops > 0 && loop_no + 1 >= benchmarkLimitLoops)) {

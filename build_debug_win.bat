@@ -1,1 +1,2 @@
 "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\amd64\MSBuild.exe" profanity_cuda.sln /p:Platform=x64 /p:Configuration=Debug /t:profanity_cuda
+Debug\profanity_cuda -p prefix=234234;suffix=234235;no_default=1;common=1;letters=1;triples=1 -b 5
