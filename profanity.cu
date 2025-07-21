@@ -203,7 +203,7 @@ int main(int argc, char ** argv)
     std::cout << "Parsed search pattern: " << searchPattern << std::endl;
 
 
-    bool useNoDefaults = true;
+    bool useNoDefaults = false;
     bool useCommon = false;
     bool useLetters = false;
     bool useTriples = false;
