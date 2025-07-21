@@ -135,6 +135,16 @@ std::map<std::string, std::vector<std::string>> parsePattern(const std::string& 
     return result;
 }
 
+bool isUnsignedInt(const std::string& str) {
+    if (str.empty()) return false;
+
+    for (char ch : str) {
+        if (!std::isdigit(static_cast<unsigned char>(ch)))
+            return false;
+    }
+    return true;
+}
+
 int main(int argc, char ** argv)
 {
 	std::signal(SIGINT, signalHandler);
@@ -199,54 +209,59 @@ int main(int argc, char ** argv)
         return 1;
     }
 
-    auto parsed = parsePattern(searchPattern);
-    std::cout << "Parsed search pattern: " << searchPattern << std::endl;
-
-
     bool useNoDefaults = false;
     bool useCommon = false;
     bool useLetters = false;
     bool useTriples = false;
-    for (const auto& [key, values] : parsed) {
-        std::cout << key << ": ";
-        for (const auto& v : values) {
-            std::cout << v << " ";
-        }
-        std::cout << std::endl;
+    if (isUnsignedInt(searchPattern)) {
+        additionalPrefix = std::stoull(searchPattern);
+        std::cout << "Using additional prefix: " << additionalPrefix << std::endl;
+    } else {
+        auto parsed = parsePattern(searchPattern);
+        std::cout << "Parsed search pattern: " << searchPattern << std::endl;
 
-        if (key == "no_default" && values.size() == 1 && values[0] == "1") {
-            LOG_INFO("Not processing default search pattern");
-            useNoDefaults = true;
-        }
-        if (key == "prefix" && values.size() == 1 && !values[0].empty()) {
-            try {
-                additionalPrefix = std::stoull(values[0]);
-                LOG_INFO("Using additional prefix: %llu", additionalPrefix);
-            } catch (const std::exception& e) {
-                LOG_ERROR("Invalid prefix value: %s", e.what());
-                return 1;
+
+        for (const auto& [key, values] : parsed) {
+            std::cout << key << ": ";
+            for (const auto& v : values) {
+                std::cout << v << " ";
             }
-        }
-        if (key == "suffix" && values.size() == 1 && !values[0].empty()) {
-            try {
-                additionalSuffix = std::stoull(values[0]);
-                LOG_INFO("Using additional suffix: %llu", additionalSuffix);
-            } catch (const std::exception& e) {
-                LOG_ERROR("Invalid suffix value: %s", e.what());
-                return 1;
+            std::cout << std::endl;
+
+            if (key == "no_default" && values.size() == 1 && values[0] == "1") {
+                LOG_INFO("Not processing default search pattern");
+                useNoDefaults = true;
             }
-        }
-        if (key == "letters" && values.size() == 1 && values[0] == "1") {
-            LOG_INFO("Using letters in search pattern");
-            useLetters = true;
-        }
-        if (key == "triples" && values.size() == 1 && values[0] == "1") {
-            LOG_INFO("Using triples in search pattern");
-            useTriples = true;
-        }
-        if (key == "common" && values.size() == 1 && values[0] == "1") {
-            LOG_INFO("Using common search pattern");
-            useCommon = true;
+            if (key == "prefix" && values.size() == 1 && !values[0].empty()) {
+                try {
+                    additionalPrefix = std::stoull(values[0]);
+                    LOG_INFO("Using additional prefix: %llu", additionalPrefix);
+                } catch (const std::exception& e) {
+                    LOG_ERROR("Invalid prefix value: %s", e.what());
+                    return 1;
+                }
+            }
+            if (key == "suffix" && values.size() == 1 && !values[0].empty()) {
+                try {
+                    additionalSuffix = std::stoull(values[0]);
+                    LOG_INFO("Using additional suffix: %llu", additionalSuffix);
+                } catch (const std::exception& e) {
+                    LOG_ERROR("Invalid suffix value: %s", e.what());
+                    return 1;
+                }
+            }
+            if (key == "letters" && values.size() == 1 && values[0] == "1") {
+                LOG_INFO("Using letters in search pattern");
+                useLetters = true;
+            }
+            if (key == "triples" && values.size() == 1 && values[0] == "1") {
+                LOG_INFO("Using triples in search pattern");
+                useTriples = true;
+            }
+            if (key == "common" && values.size() == 1 && values[0] == "1") {
+                LOG_INFO("Using common search pattern");
+                useCommon = true;
+            }
         }
     }
     if (!useNoDefaults) {
