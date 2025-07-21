@@ -480,7 +480,7 @@ __device__ void point_add(point& r, point& p, point& o) {
 
 __constant__ mp_number g_publicKeyX = {0};
 __constant__ mp_number g_publicKeyY = {0};
-__constant__ pattern_descriptor g_search_prefix = {0};
+__constant__ pattern_descriptor g_search_descr = {0};
 
 void update_public_key(const mp_number &x, const mp_number &y)
 {
@@ -490,7 +490,7 @@ void update_public_key(const mp_number &x, const mp_number &y)
 
 void update_search_prefix(const pattern_descriptor pref)
 {
-    cudaMemcpyToSymbol(g_search_prefix, &pref, sizeof(pattern_descriptor));
+    cudaMemcpyToSymbol(g_search_descr, &pref, sizeof(pattern_descriptor));
 }
 
 
@@ -693,7 +693,7 @@ __global__ void profanity_init_inverse_and_iterate(
             // Save public address hash in pInverse, only used as interim storage until next cycle
             ethaddress& addr = *(ethaddress*)&h.d[3];
 
-            if (scorer(addr, g_search_prefix)) {
+            if (scorer(addr, g_search_descr)) {
                 results[logical_id % RESULTS_ARRAY_SIZE].id = logical_id;
                 results[logical_id % RESULTS_ARRAY_SIZE].round = round;
 

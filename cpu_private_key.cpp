@@ -485,7 +485,7 @@ static void point_add(point& r, point& p, point& o) {
 
 mp_number g_publicKeyX = {0};
 mp_number g_publicKeyY = {0};
-pattern_descriptor g_search_prefix = {0};
+pattern_descriptor g_search_descr = {0};
 
 void cpu_update_public_key(const mp_number &x, const mp_number &y)
 {
@@ -495,7 +495,7 @@ void cpu_update_public_key(const mp_number &x, const mp_number &y)
 
 void cpu_update_search_prefix(pattern_descriptor pref)
 {
-    memcpy(&g_search_prefix, &pref, sizeof(pattern_descriptor));
+    memcpy(&g_search_descr, &pref, sizeof(pattern_descriptor));
 }
 
 
@@ -697,7 +697,7 @@ void cpu_profanity_init_inverse_and_iterate(
             // Save public address hash in pInverse, only used as interim storage until next cycle
             ethaddress& addr = *(ethaddress*)&h.d[3];
 
-            if (cpu_scorer(addr, g_search_prefix)) {
+            if (cpu_scorer(addr, g_search_descr)) {
                 results[logical_id % RESULTS_ARRAY_SIZE].id = logical_id;
                 results[logical_id % RESULTS_ARRAY_SIZE].round = round;
 

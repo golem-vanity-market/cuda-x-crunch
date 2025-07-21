@@ -202,11 +202,11 @@ __global__ void create3_host(factory* const factory_data, salt* const salt_data,
 }
 #endif
 
-pattern_descriptor g_search_prefix_contract = {0};
+pattern_descriptor g_search_descr_contract = {0};
 
 void cpu_update_search_prefix_contract(const pattern_descriptor &pref)
 {
-    g_search_prefix_contract = pref;
+    g_search_descr_contract = pref;
 }
 
 
@@ -297,7 +297,7 @@ void cpu_create3_search_kernel(search_result* const results, int rounds, const s
         cpu_partial_keccakf((uint64_t*)&first);
 
         ethaddress& addr = *(ethaddress*)&first.b[12];
-        if (cpu_scorer(addr, g_search_prefix_contract) == SCORE_ACCEPTED) {
+        if (cpu_scorer(addr, g_search_descr_contract) == SCORE_ACCEPTED) {
             results[id].round = round;
             results[id].id = id;
 
