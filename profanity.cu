@@ -220,7 +220,7 @@ int main(int argc, char ** argv)
         }
         if (key == "prefix" && values.size() == 1 && !values[0].empty()) {
             try {
-                additionalPrefix = std::stoull(values[0], nullptr, 16);
+                additionalPrefix = std::stoull(values[0]);
                 LOG_INFO("Using additional prefix: %llu", additionalPrefix);
             } catch (const std::exception& e) {
                 LOG_ERROR("Invalid prefix value: %s", e.what());
@@ -229,7 +229,7 @@ int main(int argc, char ** argv)
         }
         if (key == "suffix" && values.size() == 1 && !values[0].empty()) {
             try {
-                additionalSuffix = std::stoull(values[0], nullptr, 16);
+                additionalSuffix = std::stoull(values[0]);
                 LOG_INFO("Using additional suffix: %llu", additionalSuffix);
             } catch (const std::exception& e) {
                 LOG_ERROR("Invalid suffix value: %s", e.what());
