@@ -44,17 +44,25 @@ union ethaddress {
     uint32_t d[5];
 };
 
+struct pattern_descriptor {
+    uint64_t search_prefix;
+    uint64_t search_suffix;
+    bool use_common;
+    bool use_triples;
+    bool use_letters;
+};
+
 void load_seed_to_device(salt *seed_data);
 void load_factory_to_device(const char* factory);
 void create3_data_init(create3_search_data* data);
 void create3_data_destroy(create3_search_data* data);
-void create3_search(create3_search_data* factory, uint64_t search_prefix);
+void create3_search(create3_search_data* factory, pattern_descriptor descr);
 
 void cpu_load_seed_to_device(salt *seed_data);
 void cpu_load_factory_to_device(const char* factory);
 void cpu_create3_data_init(create3_search_data* data);
 void cpu_create3_data_destroy(create3_search_data* data);
-void cpu_create3_search(create3_search_data* factory, uint64_t search_prefix);
+void cpu_create3_search(create3_search_data* factory, pattern_descriptor descr);
 
 #ifdef UNUSED_OLD_TESTS
 void test_create3();
@@ -64,10 +72,10 @@ void test_create3();
 void update_device_factory(const uint8_t* factory);
 void update_device_salt(const salt* salt);
 void run_kernel_create3_search(create3_search_data * data);
-void update_search_prefix_contract(const uint64_t &pref);
+void update_search_prefix_contract(const pattern_descriptor& pref);
 
 //cpu
 void cpu_update_device_factory(const uint8_t* factory);
 void cpu_update_device_salt(const salt* salt);
 void run_cpu_create3_search(create3_search_data * data);
-void cpu_update_search_prefix_contract(const uint64_t &pref);
+void cpu_update_search_prefix_contract(const pattern_descriptor& pref);

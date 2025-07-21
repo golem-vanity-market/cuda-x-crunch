@@ -15,7 +15,7 @@ inline uint32_t bswap32(uint32_t x) {
 #define MATCH0_32(a, MASK) \
     ((a & bswap32(MASK)) == 0x0)
 
-inline uint32_t cpu_scorer(ethaddress& addr, uint64_t extra_prefix)
+inline uint32_t cpu_scorer(ethaddress& addr, pattern_descriptor descr)
 {
     int group_score = 0;
     int letter_score = 0;
@@ -23,13 +23,13 @@ inline uint32_t cpu_scorer(ethaddress& addr, uint64_t extra_prefix)
 
 
     int number_of_zeroes = 0;
-    {
+    int pattern_repeats = 0;
+    if (descr.use_common) {
         uint8_t let_full[40];
         for (int i = 0; i < 20; i++) {
             let_full[2 * i] = (addr.b[i] >> 4) & 0x0f;
             let_full[2 * i + 1] = addr.b[i] & 0x0f;
         }
-
         for (int i = 0; i < 40; i++) {
             uint8_t letter = let_full[i];
 
@@ -46,16 +46,17 @@ inline uint32_t cpu_scorer(ethaddress& addr, uint64_t extra_prefix)
                 number_of_zeroes += 1;
             }
         }
-    }
 
-    int pattern_repeats = 0;
-    if (addr.d[0] == addr.d[1] && addr.d[1] == addr.d[2] && addr.d[2] == addr.d[3]) {
-        pattern_repeats = 1;
+        if (addr.d[0] == addr.d[1] && addr.d[1] == addr.d[2] && addr.d[2] == addr.d[3]) {
+            pattern_repeats = 1;
+        }
     }
 
     int pattern = 0;
     uint32_t number = addr.d[0];
-    if (number == bswap32(0xbadbabe0)
+    uint32_t number_suffix = addr.d[4];
+
+    if ((descr.use_common && (number == bswap32(0xbadbabe0)
         || number == bswap32(0x01234567)
         || number == bswap32(0x12345678)
         || number == bswap32(0xb00bbabe)
@@ -78,8 +79,29 @@ inline uint32_t cpu_scorer(ethaddress& addr, uint64_t extra_prefix)
         || number == bswap32(0xcccccccc)
         || number == bswap32(0xdddddddd)
         || number == bswap32(0xeeeeeeee)
-        || number == bswap32(0xffffffff)
-        || (number & 0x00FFFFFF) == (extra_prefix & 0x00FFFFFF)
+        || number == bswap32(0xffffffff)))
+        || (number & 0x00FFFFFF) == (descr.search_prefix & 0x00FFFFFF)
+        ) {
+        pattern = 1;
+    }
+    if ((descr.use_common && (
+        number_suffix == bswap32(0x00000000)
+        || number_suffix == bswap32(0x11111111)
+        || number_suffix == bswap32(0x22222222)
+        || number_suffix == bswap32(0x33333333)
+        || number_suffix == bswap32(0x44444444)
+        || number_suffix == bswap32(0x55555555)
+        || number_suffix == bswap32(0x66666666)
+        || number_suffix == bswap32(0x77777777)
+        || number_suffix == bswap32(0x88888888)
+        || number_suffix == bswap32(0x99999999)
+        || number_suffix == bswap32(0xaaaaaaaa)
+        || number_suffix == bswap32(0xbbbbbbbb)
+        || number_suffix == bswap32(0xcccccccc)
+        || number_suffix == bswap32(0xdddddddd)
+        || number_suffix == bswap32(0xeeeeeeee)
+        || number_suffix == bswap32(0xffffffff)))
+        || (number & 0xFFFFFF00) == (descr.search_suffix & 0xFFFFFF00)
         ) {
         pattern = 1;
     }

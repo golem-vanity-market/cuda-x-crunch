@@ -77,7 +77,7 @@ static void cpu_printResult(std::string public_key, cl_ulong4 seed, uint64_t rou
 	// Print
     printf("0x%s,0x%s,0x%s,%s_%lu\n", strPrivate.c_str(), strPublic.c_str(), public_key.c_str(), g_strVersion.c_str(), (unsigned long)(init_data->total_compute / 1000 / 1000 / 1000));
 }
-void cpu_private_data_search(std::string public_key, uint64_t search_prefix, private_search_data *init_data)
+void cpu_private_data_search(std::string public_key, pattern_descriptor descr, private_search_data *init_data)
 {
     double start = get_app_time_sec();
 
@@ -91,7 +91,7 @@ void cpu_private_data_search(std::string public_key, uint64_t search_prefix, pri
 
     LOG_DEBUG("Copying data to device %d MB...", (uint32_t)(sizeof(search_result) * data_count / 1024 / 1024));
     cpu_update_public_key(init_data->public_key_x.mpn, init_data->public_key_y.mpn);
-    cpu_update_search_prefix(search_prefix);
+    cpu_update_search_prefix(descr);
 
     LOG_DEBUG("Running keccak kernel...");
     run_cpu_private_search(init_data);
