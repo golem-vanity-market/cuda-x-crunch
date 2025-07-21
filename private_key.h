@@ -22,7 +22,7 @@ struct private_search_data {
 };
 
 void update_public_key(mp_number const& x, mp_number const& y);
-void update_search_prefix(const uint64_t &pref);
+void update_search_prefix(pattern_descriptor pref);
 void private_data_init(private_search_data *init_data);
 void private_data_search(std::string public_key, pattern_descriptor descr, private_search_data *init_data);
 void private_data_destroy(private_search_data *init_data);
@@ -32,7 +32,7 @@ salt generate_random_salt();
 
 
 void cpu_update_public_key(mp_number const& x, mp_number const& y);
-void cpu_update_search_prefix(const uint64_t &pref);
+void cpu_update_search_prefix(pattern_descriptor pref);
 void cpu_private_data_init(private_search_data *init_data);
 void cpu_private_data_search(std::string public_key, pattern_descriptor descr, private_search_data *init_data);
 void cpu_private_data_destroy(private_search_data *init_data);

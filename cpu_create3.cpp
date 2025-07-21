@@ -202,9 +202,9 @@ __global__ void create3_host(factory* const factory_data, salt* const salt_data,
 }
 #endif
 
-uint64_t g_search_prefix_contract = 0;
+pattern_descriptor g_search_prefix_contract = {0};
 
-void cpu_update_search_prefix_contract(const uint64_t &pref)
+void cpu_update_search_prefix_contract(const pattern_descriptor &pref)
 {
     g_search_prefix_contract = pref;
 }

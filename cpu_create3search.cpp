@@ -41,7 +41,7 @@ void cpu_create3_search(create3_search_data *init_data, pattern_descriptor descr
     const uint64_t data_count = init_data->kernel_groups * kernel_group_size;
 
     cpu_load_factory_to_device(init_data->factory);
-    cpu_update_search_prefix_contract(descr.search_prefix);
+    cpu_update_search_prefix_contract(descr);
 
     salt randomSalt = cpu_generate_random_salt();
     cpu_update_device_salt(&randomSalt);

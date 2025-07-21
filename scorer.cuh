@@ -12,7 +12,7 @@ __device__ __forceinline__ uint32_t bswap32(uint32_t x) {
 #define MATCH0_32(a, MASK) \
     ((a & bswap32(MASK)) == 0x0)
 
-__device__ inline uint32_t scorer(ethaddress& addr, uint64_t extra_prefix)
+__device__ inline uint32_t scorer(ethaddress& addr, pattern_descriptor descr)
 {
     int group_score = 0;
     int letter_score = 0;
@@ -20,13 +20,13 @@ __device__ inline uint32_t scorer(ethaddress& addr, uint64_t extra_prefix)
 
 
     int number_of_zeroes = 0;
-    {
+    int pattern_repeats = 0;
+    if (descr.use_common) {
         uint8_t let_full[40];
         for (int i = 0; i < 20; i++) {
             let_full[2 * i] = (addr.b[i] >> 4) & 0x0f;
             let_full[2 * i + 1] = addr.b[i] & 0x0f;
         }
-
         for (int i = 0; i < 40; i++) {
             uint8_t letter = let_full[i];
 
@@ -43,16 +43,17 @@ __device__ inline uint32_t scorer(ethaddress& addr, uint64_t extra_prefix)
                 number_of_zeroes += 1;
             }
         }
-    }
 
-    int pattern_repeats = 0;
-    if (addr.d[0] == addr.d[1] && addr.d[1] == addr.d[2] && addr.d[2] == addr.d[3]) {
-        pattern_repeats = 1;
+        if (addr.d[0] == addr.d[1] && addr.d[1] == addr.d[2] && addr.d[2] == addr.d[3]) {
+            pattern_repeats = 1;
+        }
     }
 
     int pattern = 0;
     uint32_t number = addr.d[0];
-    if (number == bswap32(0xbadbabe0)
+    uint32_t number_suffix = addr.d[4];
+
+    if ((descr.use_common && (number == bswap32(0xbadbabe0)
         || number == bswap32(0x01234567)
         || number == bswap32(0x12345678)
         || number == bswap32(0xb00bbabe)
@@ -75,15 +76,36 @@ __device__ inline uint32_t scorer(ethaddress& addr, uint64_t extra_prefix)
         || number == bswap32(0xcccccccc)
         || number == bswap32(0xdddddddd)
         || number == bswap32(0xeeeeeeee)
-        || number == bswap32(0xffffffff)
-        || number == extra_prefix
+        || number == bswap32(0xffffffff)))
+        || number == descr.search_prefix
+        ) {
+        pattern = 1;
+    }
+    if ((descr.use_common && (
+        number_suffix == bswap32(0x00000000)
+        || number_suffix == bswap32(0x11111111)
+        || number_suffix == bswap32(0x22222222)
+        || number_suffix == bswap32(0x33333333)
+        || number_suffix == bswap32(0x44444444)
+        || number_suffix == bswap32(0x55555555)
+        || number_suffix == bswap32(0x66666666)
+        || number_suffix == bswap32(0x77777777)
+        || number_suffix == bswap32(0x88888888)
+        || number_suffix == bswap32(0x99999999)
+        || number_suffix == bswap32(0xaaaaaaaa)
+        || number_suffix == bswap32(0xbbbbbbbb)
+        || number_suffix == bswap32(0xcccccccc)
+        || number_suffix == bswap32(0xdddddddd)
+        || number_suffix == bswap32(0xeeeeeeee)
+        || number_suffix == bswap32(0xffffffff)))
+        || number_suffix == descr.search_suffix
         ) {
         pattern = 1;
     }
 
     int pattern_zeroes = 0;
 
-    if (number_of_zeroes >= 8)
+    if (descr.use_triples && number_of_zeroes >= 8) {
         if (
             (MATCH0_32(addr.d[0], 0xffff000f) && MATCH0_32(addr.d[1], 0xfff00000)) ||
             (MATCH0_32(addr.d[0], 0x0ffff000) && MATCH0_32(addr.d[1], 0xffff0000)) ||
@@ -119,6 +141,7 @@ __device__ inline uint32_t scorer(ethaddress& addr, uint64_t extra_prefix)
             ) {
             pattern_zeroes = 1;
         }
+    }
 
     if (
         pattern_zeroes >= 1 ||

@@ -72,10 +72,10 @@ void test_create3();
 void update_device_factory(const uint8_t* factory);
 void update_device_salt(const salt* salt);
 void run_kernel_create3_search(create3_search_data * data);
-void update_search_prefix_contract(const uint64_t &pref);
+void update_search_prefix_contract(const pattern_descriptor& pref);
 
 //cpu
 void cpu_update_device_factory(const uint8_t* factory);
 void cpu_update_device_salt(const salt* salt);
 void run_cpu_create3_search(create3_search_data * data);
-void cpu_update_search_prefix_contract(const uint64_t &pref);
+void cpu_update_search_prefix_contract(const pattern_descriptor& pref);

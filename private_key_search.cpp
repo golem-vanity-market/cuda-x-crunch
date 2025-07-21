@@ -94,7 +94,7 @@ void private_data_search(std::string public_key, pattern_descriptor descr, priva
 
     LOG_DEBUG("Copying data to device %d MB...", (uint32_t)(sizeof(search_result) * data_count / 1024 / 1024));
     update_public_key(init_data->public_key_x.mpn, init_data->public_key_y.mpn);
-    update_search_prefix(descr.search_prefix);
+    update_search_prefix(descr);
 
     LOG_DEBUG("Running keccak kernel...");
     run_kernel_private_search(init_data);

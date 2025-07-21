@@ -485,7 +485,7 @@ static void point_add(point& r, point& p, point& o) {
 
 mp_number g_publicKeyX = {0};
 mp_number g_publicKeyY = {0};
-uint64_t g_search_prefix = 0;
+pattern_descriptor g_search_prefix = {0};
 
 void cpu_update_public_key(const mp_number &x, const mp_number &y)
 {
@@ -493,9 +493,9 @@ void cpu_update_public_key(const mp_number &x, const mp_number &y)
     memcpy(&g_publicKeyY, &y, sizeof(mp_number));
 }
 
-void cpu_update_search_prefix(const uint64_t &pref)
+void cpu_update_search_prefix(pattern_descriptor pref)
 {
-    memcpy(&g_search_prefix, &pref, sizeof(uint64_t));
+    memcpy(&g_search_prefix, &pref, sizeof(pattern_descriptor));
 }
 
 

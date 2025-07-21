@@ -201,11 +201,11 @@ __global__ void create3_host(factory* const factory_data, salt* const salt_data,
 }
 #endif
 
-__constant__ uint64_t g_search_prefix_contract = 0;
+__constant__ pattern_descriptor g_search_prefix_contract = {0};
 
-void update_search_prefix_contract(const uint64_t &pref)
+void update_search_prefix_contract(const pattern_descriptor &pref)
 {
-    cudaMemcpyToSymbol(g_search_prefix_contract, &pref, sizeof(uint64_t));
+    cudaMemcpyToSymbol(g_search_prefix_contract, &pref, sizeof(pattern_descriptor));
 }
 
 

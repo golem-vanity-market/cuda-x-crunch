@@ -480,7 +480,7 @@ __device__ void point_add(point& r, point& p, point& o) {
 
 __constant__ mp_number g_publicKeyX = {0};
 __constant__ mp_number g_publicKeyY = {0};
-__constant__ uint64_t g_search_prefix = 0;
+__constant__ pattern_descriptor g_search_prefix = {0};
 
 void update_public_key(const mp_number &x, const mp_number &y)
 {
@@ -488,9 +488,9 @@ void update_public_key(const mp_number &x, const mp_number &y)
     cudaMemcpyToSymbol(g_publicKeyY, &y, sizeof(mp_number));
 }
 
-void update_search_prefix(const uint64_t &pref)
+void update_search_prefix(const pattern_descriptor pref)
 {
-    cudaMemcpyToSymbol(g_search_prefix, &pref, sizeof(uint64_t));
+    cudaMemcpyToSymbol(g_search_prefix, &pref, sizeof(pattern_descriptor));
 }
 
 

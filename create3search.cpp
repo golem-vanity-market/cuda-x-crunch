@@ -43,7 +43,7 @@ void create3_search(create3_search_data *init_data, pattern_descriptor descr)
     const uint64_t data_count = init_data->kernel_groups * kernel_group_size;
 
     load_factory_to_device(init_data->factory);
-    update_search_prefix_contract(descr.search_prefix);
+    update_search_prefix_contract(descr);
     CHECK_CUDA_ERROR("Failed to load factory data");
 
     salt randomSalt = generate_random_salt();
