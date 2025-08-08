@@ -56,51 +56,54 @@ inline uint32_t cpu_scorer(ethaddress& addr, pattern_descriptor descr)
     uint32_t number = addr.d[0];
     uint32_t number_suffix = addr.d[4];
 
+    uint32_t prefix_short = bswap32(number) & 0xFFFFFF00;
+    uint32_t suffix_short = bswap32(number_suffix) & 0x00FFFFFF;
+
     if ((descr.use_common && (number == bswap32(0xbadbabe0)
-        || number == bswap32(0x01234567)
-        || number == bswap32(0x12345678)
+        || prefix_short == 0x01234500
+        || prefix_short == 0x12345600
         || number == bswap32(0xb00bbabe)
         || number == bswap32(0xc0ffee00)
         || number == bswap32(0xdaedbeef)
         || number == bswap32(0xdaedf00d)
-        || number == bswap32(0x31415926)
-        || number == bswap32(0x00000000)
-        || number == bswap32(0x11111111)
-        || number == bswap32(0x22222222)
-        || number == bswap32(0x33333333)
-        || number == bswap32(0x44444444)
-        || number == bswap32(0x55555555)
-        || number == bswap32(0x66666666)
-        || number == bswap32(0x77777777)
-        || number == bswap32(0x88888888)
-        || number == bswap32(0x99999999)
-        || number == bswap32(0xaaaaaaaa)
-        || number == bswap32(0xbbbbbbbb)
-        || number == bswap32(0xcccccccc)
-        || number == bswap32(0xdddddddd)
-        || number == bswap32(0xeeeeeeee)
-        || number == bswap32(0xffffffff)))
+        || prefix_short == 0x31415900
+        || prefix_short == 0x00000000
+        || prefix_short == 0x11111100
+        || prefix_short == 0x22222200
+        || prefix_short == 0x33333300
+        || prefix_short == 0x44444400
+        || prefix_short == 0x55555500
+        || prefix_short == 0x66666600
+        || prefix_short == 0x77777700
+        || prefix_short == 0x88888800
+        || prefix_short == 0x99999900
+        || prefix_short == 0xaaaaaa00
+        || prefix_short == 0xbbbbbb00
+        || prefix_short == 0xcccccc00
+        || prefix_short == 0xdddddd00
+        || prefix_short == 0xeeeeee00
+        || prefix_short == 0xffffff00))
         || (number & 0x00FFFFFF) == (descr.search_prefix & 0x00FFFFFF)
         ) {
         pattern = 1;
     }
     if ((descr.use_common && (
-        number_suffix == bswap32(0x00000000)
-        || number_suffix == bswap32(0x11111111)
-        || number_suffix == bswap32(0x22222222)
-        || number_suffix == bswap32(0x33333333)
-        || number_suffix == bswap32(0x44444444)
-        || number_suffix == bswap32(0x55555555)
-        || number_suffix == bswap32(0x66666666)
-        || number_suffix == bswap32(0x77777777)
-        || number_suffix == bswap32(0x88888888)
-        || number_suffix == bswap32(0x99999999)
-        || number_suffix == bswap32(0xaaaaaaaa)
-        || number_suffix == bswap32(0xbbbbbbbb)
-        || number_suffix == bswap32(0xcccccccc)
-        || number_suffix == bswap32(0xdddddddd)
-        || number_suffix == bswap32(0xeeeeeeee)
-        || number_suffix == bswap32(0xffffffff)))
+           suffix_short == 0x00000000
+        || suffix_short == 0x00111111
+        || suffix_short == 0x00222222
+        || suffix_short == 0x00333333
+        || suffix_short == 0x00444444
+        || suffix_short == 0x00555555
+        || suffix_short == 0x00666666
+        || suffix_short == 0x00777777
+        || suffix_short == 0x00888888
+        || suffix_short == 0x00999999
+        || suffix_short == 0x00aaaaaa
+        || suffix_short == 0x00bbbbbb
+        || suffix_short == 0x00cccccc
+        || suffix_short == 0x00dddddd
+        || suffix_short == 0x00eeeeee
+        || suffix_short == 0x00ffffff))
         || (number & 0xFFFFFF00) == (descr.search_suffix & 0xFFFFFF00)
         ) {
         pattern = 1;
