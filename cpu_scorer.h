@@ -104,7 +104,7 @@ inline uint32_t cpu_scorer(ethaddress& addr, pattern_descriptor descr)
         || suffix_short == 0x00dddddd
         || suffix_short == 0x00eeeeee
         || suffix_short == 0x00ffffff))
-        || (number & 0xFFFFFF00) == (descr.search_suffix & 0xFFFFFF00)
+        || (number_suffix & 0xFFFFFF00) == (descr.search_suffix & 0xFFFFFF00)
         ) {
         pattern = 1;
     }
