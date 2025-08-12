@@ -113,7 +113,7 @@ jobs:
           cp profanity_cuda-12.4.1 runtime/profanity_cuda
           cd runtime
           docker build -f ubuntu2204.dockerfile -t cuda2 .
-          gvmkit-build cuda2 --push-to nvidia/cuda-x-crunch:prod-12.4.1
+          gvmkit-build cuda2 --push-to nvidia/cuda-x-crunch:low-proof-12.4.1
         env:
           REGISTRY_USER: nvidia
           REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
