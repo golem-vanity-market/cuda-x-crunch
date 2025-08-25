@@ -44,12 +44,21 @@ union ethaddress {
     uint32_t d[5];
 };
 
+union pattern_mask {
+    uint8_t b[20];
+    uint16_t w[10];
+    uint32_t d[5];
+};
+
 struct pattern_descriptor {
     uint64_t search_prefix;
     uint64_t search_suffix;
+    pattern_mask mask_bits; // bitmask to apply to the search pattern
+    pattern_mask mask_value; // the actual values to match
     bool use_common;
     bool use_triples;
     bool use_letters;
+    bool use_mask;
 };
 
 void load_seed_to_device(salt *seed_data);

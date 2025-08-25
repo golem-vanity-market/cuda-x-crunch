@@ -145,6 +145,42 @@ bool isUnsignedInt(const std::string& str) {
     return true;
 }
 
+static int hex_char_to_int(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+bool parse_mask_string(const char* mask_str, pattern_mask* mask_value, pattern_mask* mask_bits) {
+    if (strlen(mask_str) != 40) {
+        return false;
+    }
+
+    memset(mask_value, 0, sizeof(pattern_mask));
+    memset(mask_bits, 0, sizeof(pattern_mask));
+
+    for (int i = 0; i < 20; ++i) {
+        char high_char = tolower(mask_str[2 * i]);
+        char low_char = tolower(mask_str[2 * i + 1]);
+
+        if (high_char != 'x') {
+            int val = hex_char_to_int(high_char);
+            if (val == -1) return false;
+            mask_value->b[i] |= (val << 4);
+            mask_bits->b[i]  |= 0xF0;
+        }
+
+        if (low_char != 'x') {
+            int val = hex_char_to_int(low_char);
+            if (val == -1) return false;
+            mask_value->b[i] |= val;
+            mask_bits->b[i]  |= 0x0F;
+        }
+    }
+    return true;
+}
+
 int main(int argc, char ** argv)
 {
 	std::signal(SIGINT, signalHandler);
@@ -164,6 +200,10 @@ int main(int argc, char ** argv)
     double nicenessParameter = 0.0;
     uint64_t additionalPrefix = 0;
     uint64_t additionalSuffix = 0;
+
+    bool useMask = false;
+    pattern_mask maskValue = { 0 };
+    pattern_mask maskBits = { 0 };
 
     int benchmarkLimitLoops = 0;
     bool bNoRun = false;
@@ -250,6 +290,19 @@ int main(int argc, char ** argv)
                     return 1;
                 }
             }
+            if (key == "mask" && values.size() == 1 && !values[0].empty()) {
+                const std::string& mask_input_str = values[0];
+                const char* mask_cstr = mask_input_str.c_str();
+                
+                LOG_INFO("Using custom address mask: %s", mask_cstr);
+
+                if (parse_mask_string(mask_cstr, &maskValue, &maskBits)) {
+                    useMask = true;
+                } else {
+                    LOG_ERROR("Invalid mask provided. Must be 40 hex characters (0-9, a-f, A-F) with 'x' or 'X' as wildcards.");
+                    return 1;
+                }
+            }
             if (key == "letters" && values.size() == 1 && values[0] == "1") {
                 LOG_INFO("Using letters in search pattern");
                 useLetters = true;
@@ -276,6 +329,9 @@ int main(int argc, char ** argv)
     descr.use_triples = useTriples;
     descr.search_prefix = additionalPrefix;
     descr.search_suffix = additionalSuffix;
+    descr.use_mask = useMask;
+    descr.mask_value = maskValue;
+    descr.mask_bits = maskBits;
 
     if (uSeed) {
         LOG_WARNING("Using custom seed %llx so results will be the same and not random", uSeed);
