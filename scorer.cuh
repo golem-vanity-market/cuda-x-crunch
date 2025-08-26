@@ -103,6 +103,19 @@ __device__ inline uint32_t scorer(ethaddress& addr, pattern_descriptor descr)
         pattern = 1;
     }
 
+    if (descr.use_mask) {
+        if (
+                (addr.d[0] & descr.mask_bits.d[0]) == descr.mask_value.d[0] &&
+                (addr.d[1] & descr.mask_bits.d[1]) == descr.mask_value.d[1] &&
+                (addr.d[2] & descr.mask_bits.d[2]) == descr.mask_value.d[2] &&
+                (addr.d[3] & descr.mask_bits.d[3]) == descr.mask_value.d[3] &&
+                (addr.d[4] & descr.mask_bits.d[4]) == descr.mask_value.d[4]
+            )
+            {
+                pattern = 1;
+            } 
+        }
+
     int pattern_zeroes = 0;
 
     if (descr.use_triples && number_of_zeroes >= 8) {
