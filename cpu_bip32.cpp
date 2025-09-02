@@ -1,5 +1,5 @@
-#include "cpu_bip32.h"
-#include "bip32_scorer.h"
+#include "bip32.h"
+#include "scorer.h"
 #include <cstdint>
 #include <cstring>
 
@@ -429,7 +429,7 @@ static void mp_mod_inverse(mp_number& r) {
 
 #define IOTA(s00, r) { s00 ^= r; }
 
-uint64_t keccakf_rndc[24] = {
+uint64_t bip32_keccakf_rndc[24] = {
 	0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
 	0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
 	0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
@@ -441,7 +441,7 @@ uint64_t keccakf_rndc[24] = {
 };
 
 // Barely a bottleneck. No need to tinker more.
-void cpu_sha3_keccakf(ethhash& h)
+void cpu_sha3_keccakf2(ethhash& h)
 {
     uint64_t * const st = (uint64_t *) &h;
 	h.d[33] ^= 0x80000000;
@@ -452,7 +452,7 @@ void cpu_sha3_keccakf(ethhash& h)
 		THETA(st[0], st[5], st[10], st[15], st[20], st[1], st[6], st[11], st[16], st[21], st[2], st[7], st[12], st[17], st[22], st[3], st[8], st[13], st[18], st[23], st[4], st[9], st[14], st[19], st[24]);
 		RHOPI(st[0], st[5], st[10], st[15], st[20], st[1], st[6], st[11], st[16], st[21], st[2], st[7], st[12], st[17], st[22], st[3], st[8], st[13], st[18], st[23], st[4], st[9], st[14], st[19], st[24]);
 		KHI(st[0], st[5], st[10], st[15], st[20], st[1], st[6], st[11], st[16], st[21], st[2], st[7], st[12], st[17], st[22], st[3], st[8], st[13], st[18], st[23], st[4], st[9], st[14], st[19], st[24]);
-		IOTA(st[0], keccakf_rndc[i]);
+		IOTA(st[0], bip32_keccakf_rndc[i]);
 	}
 }
 // Elliptical point addition
@@ -483,23 +483,23 @@ static void point_add(point& r, point& p, point& o) {
 }
 
 
-mp_number g_publicKeyX = {0};
-mp_number g_publicKeyY = {0};
-pattern_descriptor g_search_descr = {0};
+mp_number g_bip32_publicKeyX = {0};
+mp_number g_bip32_publicKeyY = {0};
+pattern_descriptor g_bip32_search_descr = {0};
 
-void cpu_update_public_key(const mp_number &x, const mp_number &y)
+void cpu_update_bip32_key(const mp_number &x, const mp_number &y)
 {
-    memcpy(&g_publicKeyX, &x, sizeof(mp_number));
-    memcpy(&g_publicKeyY, &y, sizeof(mp_number));
+    memcpy(&g_bip32_publicKeyX, &x, sizeof(mp_number));
+    memcpy(&g_bip32_publicKeyY, &y, sizeof(mp_number));
 }
 
-void cpu_update_search_prefix(pattern_descriptor pref)
+void cpu_bip32_update_search_prefix(pattern_descriptor pref)
 {
-    memcpy(&g_search_descr, &pref, sizeof(pattern_descriptor));
+    memcpy(&g_bip32_search_descr, &pref, sizeof(pattern_descriptor));
 }
 
 
-void cpu_profanity_init_seed_first(const point * const precomp, point& p, const uint32_t precompOffset, const uint64_t seed) {
+void cpu_bip32_profanity_init_seed_first(const point * const precomp, point& p, const uint32_t precompOffset, const uint64_t seed) {
 	point o;
     bool bIsFirst = true;
 	for (uint32_t i = 0; i < 8; ++i) {
@@ -517,7 +517,7 @@ void cpu_profanity_init_seed_first(const point * const precomp, point& p, const 
 	}
 }
 
-void cpu_profanity_init_seed(const point * const precomp, point& p, const uint32_t precompOffset, const uint64_t seed) {
+void cpu_bip32_profanity_init_seed(const point * const precomp, point& p, const uint32_t precompOffset, const uint64_t seed) {
 	point o;
 
 	for (uint32_t i = 0; i < 8; ++i) {
@@ -539,7 +539,7 @@ typedef struct {
 
 
 
-void cpu_profanity_init_inverse_and_iterate(
+void cpu_bip32_profanity_init_inverse_and_iterate(
     const point * const precomp,
     search_result* const results,
     uint32_t rounds,
@@ -576,10 +576,10 @@ void cpu_profanity_init_inverse_and_iterate(
         point tmp3;
 
         // Calculate k*G where k = seed.wzyx (in other words, find the point indicated by the private key represented in seed)
-        cpu_profanity_init_seed_first(precomp, p_random, 8 * 255 * 0, seed.x);
-        cpu_profanity_init_seed(precomp, p_random, 8 * 255 * 1, seed.y);
-        cpu_profanity_init_seed(precomp, p_random, 8 * 255 * 2, seed.z);
-        cpu_profanity_init_seed(precomp, p_random, 8 * 255 * 3, seed.w + logical_id);
+        cpu_bip32_profanity_init_seed_first(precomp, p_random, 8 * 255 * 0, seed.x);
+        cpu_bip32_profanity_init_seed(precomp, p_random, 8 * 255 * 1, seed.y);
+        cpu_bip32_profanity_init_seed(precomp, p_random, 8 * 255 * 2, seed.z);
+        cpu_bip32_profanity_init_seed(precomp, p_random, 8 * 255 * 3, seed.w + logical_id);
         point_add(p, p, p_random);
 
         // Calculate current lambda in this point
@@ -692,12 +692,12 @@ void cpu_profanity_init_inverse_and_iterate(
             h.d[15] = bswap32(tmp.d[MP_WORDS - 8]);
             h.d[16] ^= 0x01; // length 64
 
-            cpu_sha3_keccakf(h);
+            cpu_sha3_keccakf2(h);
 
             // Save public address hash in pInverse, only used as interim storage until next cycle
             ethaddress& addr = *(ethaddress*)&h.d[3];
 
-            if (bip32_scorer(addr, g_search_descr)) {
+            if (bip32_scorer(addr, g_bip32_search_descr)) {
                 results[logical_id % RESULTS_ARRAY_SIZE].id = logical_id;
                 results[logical_id % RESULTS_ARRAY_SIZE].round = round;
 
@@ -709,7 +709,7 @@ void cpu_profanity_init_inverse_and_iterate(
     }
 }
 
-void cpu_profanity_dump_all_results(mp_number * const pInverse, search_result* const results, const size_t rounds, const size_t id) {
+void cpu_bip32_profanity_dump_all_results(mp_number * const pInverse, search_result* const results, const size_t rounds, const size_t id) {
 
     mp_number inv = pInverse[id];
     //int score = 0;
@@ -727,7 +727,7 @@ void run_cpu_bip32_search(bip32_search_data * data) {
     int number_of_rounds = data->rounds;
     for (size_t id = 0; id < data->kernel_groups * data->kernel_group_size; id += 1) {
         // Initialize the inverse and iterate
-        cpu_profanity_init_inverse_and_iterate(
+        cpu_bip32_profanity_init_inverse_and_iterate(
             data->device_precomp,
             data->device_result,
             number_of_rounds,
