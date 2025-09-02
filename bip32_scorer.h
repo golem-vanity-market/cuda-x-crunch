@@ -15,7 +15,7 @@ inline uint32_t bswap32(uint32_t x) {
 #define MATCH0_32(a, MASK) \
     ((a & bswap32(MASK)) == 0x0)
 
-inline uint32_t cpu_scorer(ethaddress& addr, pattern_descriptor descr)
+inline uint32_t bip32_scorer(ethaddress& addr, pattern_descriptor descr)
 {
     int group_score = 0;
     int letter_score = 0;

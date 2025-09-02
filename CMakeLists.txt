@@ -35,7 +35,6 @@ add_executable(profanity_cuda
   cpu_private_key_search.cpp
   bip32_scorer.h
   cpu_bip32.cpp
-  cpu_bip32.h
   cpu_bip32_search.cpp
  )
 

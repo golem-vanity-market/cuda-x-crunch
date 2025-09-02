@@ -1,5 +1,5 @@
 #include "version.h"
-#include "private_key.h"
+#include "cpu_bip32.h"
 #include "utils.hpp"
 #include "Logger.hpp"
 #include <iostream>
@@ -22,7 +22,7 @@ cl_ulong4 createRandomSeed() {
 	diff.s[3] = 0x0;
 	return diff;
 }
-void private_data_init(private_search_data *init_data)
+void bip32_data_init(bip32_search_data *init_data)
 {
     init_data->total_compute = 0;
     init_data->time_started = get_app_time_sec();
@@ -38,7 +38,7 @@ void private_data_init(private_search_data *init_data)
     CHECK_CUDA_ERROR("Allocate memory on CUDA");
 }
 
-void private_data_destroy(private_search_data *init_data)
+void bip32_data_destroy(bip32_search_data *init_data)
 {
     delete[] init_data->host_result;
     cudaFree(init_data->device_result);
@@ -57,7 +57,7 @@ static std::string toHex(const uint8_t * const s, const size_t len) {
 
 	return r;
 }
-static void printResult(std::string public_key, cl_ulong4 seed, uint64_t round, search_result r, private_search_data *init_data) {
+static void printResult(std::string public_key, cl_ulong4 seed, uint64_t round, search_result r, bip32_search_data *init_data) {
 
 	// Format private key
 	uint64_t carry = 0;
@@ -79,7 +79,7 @@ static void printResult(std::string public_key, cl_ulong4 seed, uint64_t round, 
 	// Print
     printf("0x%s,0x%s,0x%s,%s_%lu\n", strPrivate.c_str(), strPublic.c_str(), public_key.c_str(), g_strVersion.c_str(), (unsigned long)(init_data->total_compute / 1000 / 1000 / 1000));
 }
-void private_data_search(std::string public_key, pattern_descriptor descr, private_search_data *init_data)
+void bip32_data_search(std::string public_key, pattern_descriptor descr, bip32_search_data *init_data)
 {
     double start = get_app_time_sec();
 
@@ -97,7 +97,7 @@ void private_data_search(std::string public_key, pattern_descriptor descr, priva
     update_search_prefix(descr);
 
     LOG_DEBUG("Running keccak kernel...");
-    run_kernel_private_search(init_data);
+    run_kernel_bip32_search(init_data);
     CHECK_CUDA_ERROR("Failed to run kernel");
 
     LOG_DEBUG("Copying data back...");
