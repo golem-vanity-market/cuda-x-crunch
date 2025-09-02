@@ -14,6 +14,9 @@ add_executable(profanity_cuda
   private_key.cu
   private_key.h
   private_key_search.cpp
+  bip32.cu
+  bip32.h
+  bip32_search.cpp
   create3.cu
   create3search.cpp
   create3.h
@@ -30,6 +33,10 @@ add_executable(profanity_cuda
   cpu_scorer.h
   cpu_private_key.cpp
   cpu_private_key_search.cpp
+  bip32_scorer.h
+  cpu_bip32.cpp
+  cpu_bip32.h
+  cpu_bip32_search.cpp
  )
 
  if(UNIX AND NOT APPLE)

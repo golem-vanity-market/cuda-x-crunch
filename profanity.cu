@@ -285,6 +285,8 @@ int main(int argc, char ** argv)
         std::cout << g_strVersion;
         return 0;
     }
+    
+    bool isPublicKeyPubX = false;
     bool lookForPrivateKeys = false;
     if (publicKey.size() > 0) {
 

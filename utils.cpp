@@ -26,6 +26,22 @@ std::string string_to_lower(const std::string & str)
     return ret;
 }
 
+std::string decode_pub_key_x(const std::string& publicKey)
+{
+    std::string ret = publicKey;
+    ret = string_replace(ret, "0x", "");
+    if (ret.find_first_not_of("0123456789abcdef") != std::string::npos) {
+        std::cerr << "Invalid pub key, only hex characters are allowed: " << publicKey << std::endl;
+        return "";
+    }
+    if (ret.length() != 128) {
+        std::cerr << "Invalid pub key, length has to be 128, given length " << ret.length() << std::endl;
+        return "";
+    }
+    return ret;
+}
+
+
 std::string normalize_public_key(const std::string & publicKey)
 {
     std::string ret = publicKey;
