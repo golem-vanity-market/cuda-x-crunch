@@ -9,7 +9,7 @@
 #include <cstring>
 #include "precomp.hpp"
 
-cl_ulong4 bip32_createRandomSeed() {
+cl_ulong4 bip32_cpu_createRandomSeed() {
 	// We do not need really safe crypto random here, since we inherit safety
 	// of the key from the user-provided seed public key.
 	// We only need this random to not repeat same job among different devices
@@ -86,7 +86,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
     const int kernel_group_size = init_data->kernel_group_size;
     const uint64_t data_count = init_data->kernel_groups * kernel_group_size;
 
-    cl_ulong4 randomSalt = bip32_createRandomSeed();
+    cl_ulong4 randomSalt = bip32_cpu_createRandomSeed();
     CHECK_CUDA_ERROR("Failed to load salt data");
 
     init_data->seed = randomSalt;

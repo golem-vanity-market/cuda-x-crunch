@@ -1,5 +1,5 @@
 #include "bip32.h"
-#include "scorer.h"
+#include "cpu_scorer.h"
 #include <cstdint>
 #include <cstring>
 
@@ -697,7 +697,7 @@ void cpu_bip32_profanity_init_inverse_and_iterate(
             // Save public address hash in pInverse, only used as interim storage until next cycle
             ethaddress& addr = *(ethaddress*)&h.d[3];
 
-            if (bip32_scorer(addr, g_bip32_search_descr)) {
+            if (cpu_scorer(addr, g_bip32_search_descr)) {
                 results[logical_id % RESULTS_ARRAY_SIZE].id = logical_id;
                 results[logical_id % RESULTS_ARRAY_SIZE].round = round;
 
