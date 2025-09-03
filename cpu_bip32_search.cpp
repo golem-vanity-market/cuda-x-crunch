@@ -40,7 +40,7 @@ static inline uint64_t swap64(const uint64_t val)
 
 // bitselect is "if c then b else a" for each bit
 // so equivalent to (c & b) | ((~c) & a)
-#define choose(x,y,z)   (bitselect(z,y,x))
+#define choose64(x,y,z)   (bitselect(z,y,x))
 // Cleverly determines majority vote, conditioning on x=z
 #define bit_maj(x,y,z)   (bitselect (x, y, ((x) ^ (z))))
 
@@ -140,7 +140,7 @@ uint64_t k_sha256[80] =
 #define SHA512_STEP(a,b,c,d,e,f,g,h,x,K)  \
 /**/                \
 {                   \
-  h += K + S1(e) + choose(e,f,g) + x; /* h = temp1 */   \
+  h += K + S1(e) + choose64(e,f,g) + x; /* h = temp1 */   \
   d += h;           \
   h += S0(a) + bit_maj(a,b,c);  \
 }
