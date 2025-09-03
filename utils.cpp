@@ -44,6 +44,9 @@ std::string decode_pub_key_x(const std::string& publicKey)
 
 std::string normalize_public_key(const std::string & publicKey)
 {
+    if (publicKey.substr(0, 4) == "xpub") {
+        return publicKey;
+    }
     std::string ret = publicKey;
     ret = string_replace(ret, "0x", "");
     if (ret.find_first_not_of("0123456789abcdef") != std::string::npos) {

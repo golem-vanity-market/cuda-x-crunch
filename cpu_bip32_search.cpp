@@ -79,86 +79,200 @@ static void printResult(std::string public_key, cl_ulong4 seed, uint64_t round, 
 	// Print
     printf("0x%s,0x%s,0x%s,%s_%lu\n", strPrivate.c_str(), strPublic.c_str(), public_key.c_str(), g_strVersion.c_str(), (unsigned long)(init_data->total_compute / 1000 / 1000 / 1000));
 }
+
+
+static const int8_t b58digits_map[] = {
+	-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+	-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
+	-1, 0, 1, 2, 3, 4, 5, 6,  7, 8,-1,-1,-1,-1,-1,-1,
+	-1, 9,10,11,12,13,14,15, 16,-1,17,18,19,20,21,-1,
+	22,23,24,25,26,27,28,29, 30,31,32,-1,-1,-1,-1,-1,
+	-1,33,34,35,36,37,38,39, 40,41,42,43,-1,44,45,46,
+	47,48,49,50,51,52,53,54, 55,56,57,-1,-1,-1,-1,-1,
+};
+
+typedef uint64_t b58_maxint_t;
+typedef uint32_t b58_almostmaxint_t;
+#define b58_almostmaxint_bits (sizeof(b58_almostmaxint_t) * 8)
+static const b58_almostmaxint_t b58_almostmaxint_mask = ((((b58_maxint_t)1) << b58_almostmaxint_bits) - 1);
+
+bool b58tobin(uint8_t *bin, const char *b58, size_t b58sz)
+{
+	size_t binsz = 82;
+	const uint8_t *b58u = (uint8_t*)b58;
+	uint8_t *binu = bin;
+	size_t outisz = (82 + 3) / 4;
+	b58_almostmaxint_t outi[21];
+	b58_maxint_t t;
+	b58_almostmaxint_t c;
+	size_t i, j;
+	uint8_t bytesleft = binsz % sizeof(b58_almostmaxint_t);
+	b58_almostmaxint_t zeromask = bytesleft ? (b58_almostmaxint_mask << (bytesleft * 8)) : 0;
+	unsigned zerocount = 0;
+	
+	if (!b58sz)
+		b58sz = strlen(b58);
+	
+	for (i = 0; i < outisz; ++i) {
+		outi[i] = 0;
+	}
+	
+	// Leading zeros, just count
+	for (i = 0; i < b58sz && b58u[i] == '1'; ++i)
+		++zerocount;
+	
+	for ( ; i < b58sz; ++i)
+	{
+		if (b58u[i] & 0x80)
+			// High-bit set on invalid digit
+			return false;
+		if (b58digits_map[b58u[i]] == -1)
+			// Invalid base58 digit
+			return false;
+		c = (unsigned)b58digits_map[b58u[i]];
+		for (j = outisz; j--; )
+		{
+			t = ((b58_maxint_t)outi[j]) * 58 + c;
+			c = t >> b58_almostmaxint_bits;
+			outi[j] = t & b58_almostmaxint_mask;
+		}
+		if (c)
+			// Output number too big (carry to the next int32)
+			return false;
+		if (outi[0] & zeromask)
+			// Output number too big (last int32 filled too far)
+			return false;
+	}
+	
+	j = 0;
+	if (bytesleft) {
+		for (i = bytesleft; i > 0; --i) {
+			*(binu++) = (outi[0] >> (8 * (i - 1))) & 0xff;
+		}
+		++j;
+	}
+	
+	for (; j < outisz; ++j)
+	{
+		for (i = sizeof(*outi); i > 0; --i) {
+			*(binu++) = (outi[j] >> (8 * (i - 1))) & 0xff;
+		}
+	}
+	return true;
+}
+static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+void b58enc(uint8_t* b58, uint8_t* b58sz, const uint8_t* data)
+{
+	int binsz = 82;
+	const uint8_t* bin = data;
+	int carry;
+	size_t i, j, high, zcount = 0;
+	size_t size;
+
+	while (zcount < binsz && !bin[zcount])
+		++zcount;
+
+	size = (binsz - zcount) * 138 / 100 + 1;
+	uint8_t buf[114];
+	memset(buf, 0, size);
+
+	for (i = zcount, high = size - 1; i < binsz; ++i, high = j)
+	{
+		for (carry = bin[i], j = size - 1; (j > high) || carry; --j)
+		{
+			carry += 256 * buf[j];
+			buf[j] = carry % 58;
+			carry /= 58;
+			if (!j) {
+				// Otherwise j wraps to maxint which is > high
+				break;
+			}
+		}
+	}
+
+	for (j = 0; j < size && !buf[j]; ++j);
+
+
+	if (zcount)
+		memset(b58, '1', zcount);
+	for (i = zcount; j < size; ++i, ++j)
+		b58[i] = b58digits_ordered[buf[j]];
+	b58[i] = '\0';
+	*b58sz = i;
+}
+
+bip32_pub_key_compr cpu_decode_bip32_compressed(bip32_pub_key_compr compr) {
+	bip32_pub_key r;
+
+	bip32_pub_key_compr compr2;
+	uint8_t out[82];
+	b58tobin(out, (const char*)compr.data, compr.size);
+
+	b58enc(compr2.data, &compr2.size, out);
+
+	//printf("Start  : %.*s\n", compr.size, compr.data);
+    //uint8_t out[82];
+    //base58_decode((const char*) compr.data, out, 82);
+    //display hex
+	//printf("Decoded: %s\n", toHex(out, 78).c_str());
+
+	printf("End    : %.*s\n", compr2.size, compr2.data);
+
+    return compr2;
+}
+
+
+void random_encoding_test() {
+	uint8_t raw[82];
+	for (int i = 0; i < 82; i++) {
+		raw[i] = get_next_random() % 256;
+	}
+	//printf("Random : %s\n", toHex(raw, 82).c_str());
+	bip32_pub_key_compr enc;
+	b58enc(enc.data, &enc.size, raw);
+
+	if (enc.size != 110 && enc.size != 111 && enc.size != 112) {
+		printf("WARN: different compr size %d\n", enc.size);
+	}
+	if (enc.size > 112) {
+		printf("Random encoding test failed too big encoding size\n");
+		return;
+	}
+	//printf("Encoded: %.*s\n", enc.size, enc.data);
+
+	uint8_t raw2[82];
+	b58tobin(raw2, (const char*)enc.data, enc.size);
+	//printf("Reenco : %s\n", toHex(raw2, 82).c_str());
+	if (memcmp(raw, raw2, 82) != 0) {
+		printf("Random encoding test failed\n");
+		return;
+	}
+}
+
 void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip32_search_data *init_data)
 {
-    double start = get_app_time_sec();
+	bip32_pub_key_compr compr;
+	for (int i = 0; i < public_key.size(); i++) {
+        compr.data[i] = public_key[i];
+	}
+    compr.data[public_key.size()] = 0;
+	compr.size = public_key.size();
 
-    const int kernel_group_size = init_data->kernel_group_size;
-    const uint64_t data_count = init_data->kernel_groups * kernel_group_size;
+	bip32_pub_key_compr comprNew = compr;
+	uint8_t raw[82];
+	b58tobin(raw, (const char*)compr.data, compr.size);
 
-    cl_ulong4 randomSalt = bip32_cpu_createRandomSeed();
-    CHECK_CUDA_ERROR("Failed to load salt data");
-
-    init_data->seed = randomSalt;
-    cudaMemset(init_data->device_result, 0, sizeof(search_result) * RESULTS_ARRAY_SIZE);
-
-    LOG_DEBUG("Copying data to device %d MB...", (uint32_t)(sizeof(search_result) * data_count / 1024 / 1024));
-    update_bip32_key(init_data->public_key_x.mpn, init_data->public_key_y.mpn);
-    bip32_update_search_prefix(descr);
-
-    LOG_DEBUG("Running keccak kernel...");
-    run_kernel_bip32_search(init_data);
-    CHECK_CUDA_ERROR("Failed to run kernel");
-
-    LOG_DEBUG("Copying data back...");
-    search_result* f = init_data->host_result;
-    cudaMemcpy(f, init_data->device_result, RESULTS_ARRAY_SIZE * sizeof(search_result), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    CHECK_CUDA_ERROR("Failed to run kernel or copy memory");
-
-    double end = get_app_time_sec();
-
-    char hexAddr[43] = { 0 };
-    for (int n = 0; n < RESULTS_ARRAY_SIZE; n++) {
-        if (f[n].round != 0) {
-            printResult(public_key, init_data->seed, f[n].round, f[n], init_data);
-            //salt newSalt;
-            //newSalt.q[0] = randomSalt.q[0];
-            /*newSalt.q[1] = randomSalt.q[1];
-            newSalt.q[2] = randomSalt.q[2];
-            newSalt.q[3] = randomSalt.q[3];
-            newSalt.d[0] = f[n].id;
-            newSalt.d[1] = f[n].round;
-            std::string hexAddr = bytes_to_ethereum_address(f[n].addr);
-
-            char salt[65] = {0};
-            for (int i = 0; i < 32; i++) {
-                sprintf(&salt[(i) * 2], "%02x", newSalt.b[i]);
-            }
-            salt[64] = 0;
-            printf("0x%s,%s,%s_%lld\n", salt, hexAddr.c_str(), "cuda_miner_v0.1.0", init_data->total_compute / 1000 / 1000 / 1000);
-*/
-//printResult(init_data->seed, 1, *f)
-//            std::string outputDir = init_data->outputDir;
-  //          if (outputDir == "") {
-                continue;
-    //        }
-            // Ensure output directory exists
-/*
-            std::filesystem::path outDirPath(outputDir);
-            if (!std::filesystem::exists(outDirPath)) {
-                std::filesystem::create_directories(outDirPath);
-            }
-
-            std::string fileName = init_data->outputDir + std::string("/addr_") + hexAddr + ".csv";
-
-            FILE *out_file = fopen(fileName.c_str(), "w");
-            if (out_file == NULL) {
-				LOG_ERROR("Error opening file %s!\n", fileName.c_str());
-				exit(1);
-			}
-
-            fprintf(out_file, "0x%s,%s,0x%s,%s_%lld", salt, hexAddr.c_str(), init_data->factory, "cuda_miner_v0.1.0", init_data->total_compute / 1000 / 1000 / 1000);
-
-            fclose(out_file);*/
-
-        }
-    }
+	printf("Started random compression testing ..\n");
+	for (int64_t i = 1; /*i <= 10000000*/; i++) {
+		if (i % 1000000 == 0) {
+			printf("Computed: %lldM\n", i / 1000000);
+			fflush(stdout);
+		}
+		random_encoding_test();
+	}
 
 
-    init_data->total_compute += init_data->rounds * data_count * PROFANITY_INVERSE_SIZE;
-    LOG_DEBUG("Addresses computed: %lld", init_data->total_compute);
-    LOG_DEBUG("Compute MH: %f MH/s", (double)init_data->total_compute / (end - start) / 1000 / 1000);
-    LOG_INFO("Total compute %.2f GH - %.2f MH/s", (double)init_data->total_compute / 1000. / 1000. / 1000., (double)init_data->total_compute / (end - init_data->time_started) / 1000 / 1000);
+
 
 }

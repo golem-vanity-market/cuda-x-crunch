@@ -21,6 +21,25 @@ struct bip32_search_data {
     double time_started;
 };
 
+#define MAX_COMPRESSED_KEY_SIZE 114
+
+struct bip32_pub_key_compr {
+    uint8_t data[MAX_COMPRESSED_KEY_SIZE];
+	uint8_t size;
+};
+
+struct bip32_pub_key {
+    int version;
+    int depth;
+    int parent_fpr;
+    int child_num;
+    int chain_code;
+    cl_ulong4 public_key_x;
+    cl_ulong4 public_key_y;
+};
+
+
+
 void update_bip32_key(mp_number const& x, mp_number const& y);
 void bip32_update_search_prefix(pattern_descriptor pref);
 void bip32_data_init(bip32_search_data* init_data);
