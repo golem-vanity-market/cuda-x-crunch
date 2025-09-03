@@ -35,7 +35,6 @@ void cpu_bip32_data_init(bip32_search_data *init_data)
     init_data->host_result = new search_result[RESULTS_ARRAY_SIZE]();
 
     memset(init_data->host_result, 0, sizeof(search_result) * RESULTS_ARRAY_SIZE);
-    CHECK_CUDA_ERROR("Allocate memory on CUDA");
 }
 
 void cpu_bip32_data_destroy(bip32_search_data *init_data)
