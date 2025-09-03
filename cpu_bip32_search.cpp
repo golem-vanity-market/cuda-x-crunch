@@ -27,7 +27,7 @@
 static inline uint64_t bitselect(uint64_t a, uint64_t b, uint64_t c) {
 	return (a & ~c) | (b & c);
 }
-uint64_t swap64(const uint64_t val)
+static inline uint64_t swap64(const uint64_t val)
 {
 	// ab cd ef gh -> gh ef cd ab using the 32 bit trick
 	uint64_t tmp = (rotr64(val & 0x0000FFFF0000FFFFUL, 16UL) | rotl64(val & 0xFFFF0000FFFF0000UL, 16UL));
@@ -43,9 +43,6 @@ uint64_t swap64(const uint64_t val)
 #define choose(x,y,z)   (bitselect(z,y,x))
 // Cleverly determines majority vote, conditioning on x=z
 #define bit_maj(x,y,z)   (bitselect (x, y, ((x) ^ (z))))
-
-// Hopefully rotate works for long too?
-
 
 
 // ==============================================================================
@@ -83,7 +80,7 @@ uint64_t maskLong[8] = {
 /* The standard padding, INPLACE,
 	add a 1 bit, then little-endian original length mod 2^128 (not 64) at the end of a block
 	RETURN number of blocks */                  
-static int mdPadFunc(uint64_t* msg, const uint64_t msgLen_bytes)
+static int sha512_inplace_padding(uint64_t* msg, const uint64_t msgLen_bytes)
 {                                                                      
 	/* Appends the 1 bit to the end, and 0s to the end of the byte */ 
 	const uint32_t padLongIndex = (msgLen_bytes) / 8;              
@@ -174,10 +171,10 @@ uint64_t k_sha256[80] =
 
 
 /* The main hashing function */     
-static void hash_global(uint64_t *input, const uint32_t length, uint64_t* hash)    
+static void sha512_hash_function(uint64_t *input, const uint32_t length, uint64_t* hash)
 {                                   
     /* Do the padding - we weren't previously for some reason */            
-	const uint32_t nBlocks = mdPadFunc(input, (const unsigned long)length);
+	const uint32_t nBlocks = sha512_inplace_padding(input, (const unsigned long)length);
     /*if (length == 8){   
         printf("Padded input: ");   \
         printFromLongFunc(input, hashBlockSize_bytes, true)
@@ -770,12 +767,12 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	uint64_t hashOut[8] = { 0 };
 
 
-	const std::string message = "Wiadomosc testowa 3333 AAAA fffffffff";
+	const std::string message = "56781234_44444";
 
 	memcpy(hashIn, message.c_str(), message.size());
 
 
-	hash_global(hashIn, message.size(), hashOut);
+	sha512_hash_function(hashIn, message.size(), hashOut);
 	printf("SHA512(0) = %016llx%016llx%016llx%016llx%016llx%016llx%016llx%016llx\n",
 		swap64(hashOut[0]), swap64(hashOut[1]), swap64(hashOut[2]), swap64(hashOut[3]),
 			swap64(hashOut[4]), swap64(hashOut[5]), swap64(hashOut[6]), swap64(hashOut[7]));
