@@ -479,13 +479,29 @@ int main(int argc, char ** argv)
             if (bSearchBip32) {
                 LOG_INFO("Searching for private keys [CPU] for pubx: %s", publicKey.c_str());
                 
+                //search for split
+
+				int pos = publicKey.find("_") + 1;
+                if (pos == 0) {
+                    std::cout << "error: bad pubx format, missing _" << std::endl;
+					return 1;
+                }
+
+                cl_ulong4 clSeedX = fromHexCLUlong(publicKey.substr(pos + 0, 64));
+                cl_ulong4 clSeedY = fromHexCLUlong(publicKey.substr(pos + 64, 64));
 
                 bip32_search_data cpu_bip32_init_data;
                 cpu_bip32_init_data.rounds = rounds;
                 cpu_bip32_init_data.kernel_group_size = kernelSize;
                 cpu_bip32_init_data.kernel_groups = groups;
-                
+                cpu_bip32_init_data.public_key_x = clSeedX;
+                cpu_bip32_init_data.public_key_y = clSeedY;
+
                 memset(&cpu_bip32_init_data.seed, 0, sizeof(cpu_bip32_init_data.seed));
+
+                LOG_INFO("Public key SeedX: %llu %llu %llu %llu\n", clSeedX.s0, clSeedX.s1, clSeedX.s2, clSeedX.s3);
+                LOG_INFO("Public key SeedY: %llu %llu %llu %llu\n", clSeedY.s0, clSeedY.s1, clSeedY.s2, clSeedY.s3);
+
 
                 //LOG_INFO("Factory address: 0x%s", init_data.factory);
                 //LOG_INFO("Output directory: %s", init_data.outputDir);
@@ -500,7 +516,7 @@ int main(int argc, char ** argv)
                     if (g_exiting) {
                         break;
                     }
-                    cpu_bip32_data_search(publicKey, descr, &cpu_bip32_init_data);
+                    cpu_bip32_data_search(publicKey.substr(0, pos - 1), descr, &cpu_bip32_init_data);
                     break;
                     double end = get_app_time_sec();
                     if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)

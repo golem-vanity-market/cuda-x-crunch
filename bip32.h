@@ -29,11 +29,13 @@ struct bip32_pub_key_compr {
 };
 
 struct bip32_pub_key {
-    int version;
-    int depth;
-    int parent_fpr;
-    int child_num;
-    int chain_code;
+    uint32_t version;
+    uint8_t depth;
+    uint32_t parent_fpr;
+    uint32_t child_num;
+    uint8_t chain_code[32];
+    uint8_t compressed_key[33];
+	uint8_t verification[4];
     cl_ulong4 public_key_x;
     cl_ulong4 public_key_y;
 };

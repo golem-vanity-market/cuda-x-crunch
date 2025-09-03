@@ -96,6 +96,7 @@ typedef uint32_t b58_almostmaxint_t;
 #define b58_almostmaxint_bits (sizeof(b58_almostmaxint_t) * 8)
 static const b58_almostmaxint_t b58_almostmaxint_mask = ((((b58_maxint_t)1) << b58_almostmaxint_bits) - 1);
 
+// probably no need to be optimized for CPU
 bool b58tobin(uint8_t *bin, const char *b58, size_t b58sz)
 {
 	size_t binsz = 82;
@@ -161,6 +162,8 @@ bool b58tobin(uint8_t *bin, const char *b58, size_t b58sz)
 	return true;
 }
 static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+// this has to be optimized (it is used in new key derivation)
 void b58enc(uint8_t* b58, uint8_t* b58sz, const uint8_t* data)
 {
 	int binsz = 82;
@@ -222,6 +225,43 @@ bip32_pub_key_compr cpu_decode_bip32_compressed(bip32_pub_key_compr compr) {
 }
 
 
+inline uint32_t bswap32(uint32_t x) {
+	return ((x & 0x000000FFU) << 24) |
+		((x & 0x0000FF00U) << 8) |
+		((x & 0x00FF0000U) >> 8) |
+		((x & 0xFF000000U) >> 24);
+}
+
+// Compress 65-byte uncompressed pubkey (0x04 || X || Y) into 33-byte compressed
+// Returns 0 on success, -1 if invalid
+static int compress_pubkey(uint8_t out33[33], bip32_pub_key pub) {
+	// Copy X coordinate (bytes 1..32)
+	//memcpy(&out33[1], &pub.public_key_x, 32);
+
+	cl_ulong4 x = pub.public_key_x;
+
+	*(uint32_t*)&out33[29] = bswap32(x.d[0]);
+	*(uint32_t*)&out33[25] = bswap32(x.d[1]);
+	*(uint32_t*)&out33[21] = bswap32(x.d[2]);
+	*(uint32_t*)&out33[17] = bswap32(x.d[3]);
+	*(uint32_t*)&out33[13] = bswap32(x.d[4]);
+	*(uint32_t*)&out33[9] = bswap32(x.d[5]);
+	*(uint32_t*)&out33[5] = bswap32(x.d[6]);
+	*(uint32_t*)&out33[1] = bswap32(x.d[7]);
+
+	cl_ulong4 y = pub.public_key_y;
+	// Check parity
+
+	out33[0] = (y.d[0] & 0x1) ? 0x03 : 0x02;
+
+	// Check parity of Y coordinate (last byte of pubkey = least significant byte of Y)
+	//uint8_t y_parity = in65[64] & 1;
+	//out33[0] = y_parity ? 0x03 : 0x02;
+
+	return 0;
+}
+
+
 void random_encoding_test() {
 	uint8_t raw[82];
 	for (int i = 0; i < 82; i++) {
@@ -261,9 +301,40 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	bip32_pub_key_compr comprNew = compr;
 	uint8_t raw[82];
 	b58tobin(raw, (const char*)compr.data, compr.size);
+	
+	bip32_pub_key pub;
+	pub.public_key_x = init_data->public_key_x;
+	pub.public_key_y = init_data->public_key_y;
+	pub.version = *(uint32_t*)&raw[0];
+	pub.depth = raw[4];
+	pub.parent_fpr = *(uint32_t*)&raw[5];
+	pub.child_num = *(uint32_t*)&raw[9];
+	memcpy(&pub.chain_code[0], &raw[13], 32);
+
+	uint8_t compressed_pub_key[33];
+	compress_pubkey(compressed_pub_key, pub);
+	if (memcmp(&raw[45], compressed_pub_key, 33) != 0) {
+		printf("Public key compression mismatch!\n");
+		printf("Compressed public key from raw  : %s\n", toHex(&raw[45], 33).c_str());
+		printf("Compressed public key from input: %s\n", toHex(compressed_pub_key, 33).c_str());
+		return;
+	}
+	memcpy(&pub.verification, &raw[78], 4);
+
+	printf("BIP32 public key details:\n");
+	printf(" Version       : 0x%08x\n", bswap32(pub.version));
+	printf(" Depth         : %d\n", pub.depth);
+	printf(" Parent fpr    : 0x%08x\n", bswap32(pub.parent_fpr));
+	printf(" Child num     : %u\n", bswap32(pub.child_num));
+	printf(" Chain code    : %s\n", toHex(pub.chain_code, 32).c_str());
+	printf(" Compressed key: %s\n", toHex(compressed_pub_key, 33).c_str());
+	printf(" Verification  : %s\n", toHex(pub.verification, 4).c_str());
+
+	printf("Public key accepted: %s\n", toHex(compressed_pub_key, 33).c_str());
+
 
 	printf("Started random compression testing ..\n");
-	for (int64_t i = 1; /*i <= 10000000*/; i++) {
+	for (int64_t i = 1; i <= 10000; i++) {
 		if (i % 1000000 == 0) {
 			printf("Computed: %lldM\n", i / 1000000);
 			fflush(stdout);
