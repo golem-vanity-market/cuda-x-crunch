@@ -20,17 +20,6 @@
 	The moral of the story is always use UL on uint64_ts!
 */
 
-//
-#define hashBlockSize_bytes 128
-#define hashDigestSize_bytes 64
-#define wordSize 8
-// just Size always implies _word
-
-
-	// Initially for use in SHA-512
-#define hashBlockSize_long64 16
-#define hashDigestSize_long64 8
-#define word uint64_t
 
 #define rotl64(X, S) (((X) << S) | ((X) >> (64 - S)))
 #define rotr64(X, S) (((X) >> (S)) | ((X) << (64 - (S))))
@@ -90,7 +79,6 @@ uint64_t maskLong[8] = {
 	fBytes(4), fBytes(5), fBytes(6), fBytes(7)
 };
 
-#define bs_long hashBlockSize_long64
 
 /* The standard padding, INPLACE,
 	add a 1 bit, then little-endian original length mod 2^128 (not 64) at the end of a block
@@ -110,13 +98,13 @@ static int mdPadFunc(uint64_t* msg, const uint64_t msgLen_bytes)
 	msg[padLongIndex + 1] = 0;                                          
 	msg[padLongIndex + 2] = 0;                                          
 	uint32_t i = 0;                                                 
-	for (i = padLongIndex + 3; i % bs_long != 0; i++)                   
+	for (i = padLongIndex + 3; i % 16 != 0; i++)
 	{                                                                  
 		msg[i] = 0;                                                     
 	}                                                                   
 	
 	/* Determine the total number of blocks */                          
-	int nBlocks = i / bs_long;                                          
+	int nBlocks = i / 16;
 	/* Add the bit length to the end, 128-bit, big endian? (source wikipedia)
 		Seemingly this does require SWAPing, so perhaps it's little-endian? */           
 	msg[i - 2] = 0;   /* For clarity */                                   
@@ -259,7 +247,7 @@ static void hash_global(uint64_t *input, const uint32_t length, uint64_t* hash)
 		State[5] += f;  
 		State[6] += g;  
 		State[7] += h;  
-		input += hashBlockSize_long64;   
+		input += 16;   
 	}                   
 		
 	hash[0] = swap64(State[0]);   
@@ -509,7 +497,7 @@ static void printResult(std::string public_key, cl_ulong4 seed, uint64_t round, 
 	const std::string strPublic = toHex(r.addr, 20);
 
 	// Print
-    printf("0x%s,0x%s,0x%s,%s_%lu\n", strPrivate.c_str(), strPublic.c_str(), public_key.c_str(), g_strVersion.c_str(), (uint64_t)(init_data->total_compute / 1000 / 1000 / 1000));
+    printf("0x%s,0x%s,0x%s,%s_%llu\n", strPrivate.c_str(), strPublic.c_str(), public_key.c_str(), g_strVersion.c_str(), (uint64_t)(init_data->total_compute / 1000 / 1000 / 1000));
 }
 
 
