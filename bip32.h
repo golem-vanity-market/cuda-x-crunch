@@ -60,3 +60,8 @@ void cpu_bip32_data_destroy(bip32_search_data* init_data);
 void run_cpu_bip32_search(bip32_search_data* data);
 
 salt cpu_bip32_generate_random_salt();
+
+void b58enc(uint8_t* b58, uint8_t* b58sz, const uint8_t* data);
+bip32_pub_key_compr cpu_decode_bip32_compressed(bip32_pub_key_compr compr);
+bool b58tobin(uint8_t* bin, const char* b58, size_t b58sz);
+int compress_pubkey(uint8_t out33[33], bip32_pub_key pub);

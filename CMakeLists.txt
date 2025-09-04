@@ -16,6 +16,7 @@ add_executable(profanity_cuda
   private_key_search.cpp
   bip32.cu
   bip32.h
+  bip32_extras.cpp
   bip32_search.cpp
   create3.cu
   create3search.cpp
