@@ -1,5 +1,13 @@
 
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
+include(FetchContent)
+
+FetchContent_Declare(
+  secp256k1
+  GIT_REPOSITORY https://github.com/bitcoin-core/secp256k1.git
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(secp256k1)
 
 project(profanity_cuda LANGUAGES CXX CUDA)
 
@@ -42,4 +50,6 @@ add_executable(profanity_cuda
      target_include_directories(profanity_cuda PRIVATE /usr/local/cuda/targets/x86_64-linux/include)
  endif()
 
+
+target_link_libraries(profanity_cuda PRIVATE secp256k1)
 

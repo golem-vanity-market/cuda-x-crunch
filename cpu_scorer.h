@@ -80,7 +80,7 @@ inline uint32_t cpu_scorer(ethaddress& addr, pattern_descriptor descr)
         || number == bswap32(0xdddddddd)
         || number == bswap32(0xeeeeeeee)
         || number == bswap32(0xffffffff)))
-        || (number & 0x00FFFFFF) == (descr.search_prefix & 0x00FFFFFF)
+        || (number & 0x0000FFFF) == (descr.search_prefix & 0x0000FFFF)
         ) {
         pattern = 1;
     }

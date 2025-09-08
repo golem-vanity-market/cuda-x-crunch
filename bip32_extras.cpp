@@ -166,11 +166,11 @@ inline uint32_t bswap32(uint32_t x) {
 
 // Compress 65-byte uncompressed pubkey (0x04 || X || Y) into 33-byte compressed
 // Returns 0 on success, -1 if invalid
-int compress_pubkey(uint8_t out33[33], bip32_pub_key pub) {
+int compress_pubkey(uint8_t out33[33], point pub) {
 	// Copy X coordinate (bytes 1..32)
 	//memcpy(&out33[1], &pub.public_key_x, 32);
 
-	cl_ulong4 x = pub.public_key_x;
+	mp_number x = pub.x;
 
 	*(uint32_t*)&out33[29] = bswap32(x.d[0]);
 	*(uint32_t*)&out33[25] = bswap32(x.d[1]);
@@ -181,7 +181,7 @@ int compress_pubkey(uint8_t out33[33], bip32_pub_key pub) {
 	*(uint32_t*)&out33[5] = bswap32(x.d[6]);
 	*(uint32_t*)&out33[1] = bswap32(x.d[7]);
 
-	cl_ulong4 y = pub.public_key_y;
+	mp_number y = pub.y;
 	// Check parity
 
 	out33[0] = (y.d[0] & 0x1) ? 0x03 : 0x02;

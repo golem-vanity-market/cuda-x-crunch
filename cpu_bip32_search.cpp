@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <cstring>
 #include "precomp.hpp"
+#include <secp256k1.h>
+#include "cpu_scorer.h"
 
 
 #define rotate64(x, s) ((x << s) | (x >> (64U - s)))
@@ -592,7 +594,7 @@ void mp_point_mul(point& R, const mp_number& k, const point& P) {
 
 	// Iterate over bits of k (MSB first)
 	for (int i = 0; i < 256; i++) {
-		printf("%d", mp_getbit(k, i));
+		//printf("%d", mp_getbit(k, i));
 		// R = 2R
 		if (!infinity) {
 			point_double(R, R);
@@ -610,6 +612,11 @@ void mp_point_mul(point& R, const mp_number& k, const point& P) {
 		}
 	}
 }
+
+
+
+
+
 
 // bitselect is "if c then b else a" for each bit
 // so equivalent to (c & b) | ((~c) & a)
@@ -974,12 +981,6 @@ void random_encoding_test() {
 	}
 }
 
-inline uint32_t bswap32(uint32_t x) {
-	return ((x & 0x000000FFU) << 24) |
-		((x & 0x0000FF00U) << 8) |
-		((x & 0x00FF0000U) >> 8) |
-		((x & 0xFF000000U) >> 24);
-}
 
 struct sha_512_result {
 	uint8_t bytes[64];
@@ -1072,8 +1073,186 @@ bool test_sha_512_hmac_loop() {
 	return true;
 }
 
+secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+
+extern pattern_descriptor g_bip32_search_descr;
+bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_code[32], std::string path, uint32_t index) {
+	//bip32_pub_key pub;
+
+
+	uint8_t compressed_pub_key[33];
+	compress_pubkey(compressed_pub_key, pub);
+	secp256k1_pubkey pubkey;
+
+	memcpy(pubkey.data, &pub, sizeof(point));
+
+	uint8_t keyBin[128] = { 0 };
+	uint8_t dataBin[37];
+
+	memcpy(keyBin, chain_code, 32);
+	memcpy(dataBin, compressed_pub_key, 33);
+
+	dataBin[33] = (index >> 24) & 0xFF;
+	dataBin[34] = (index >> 16) & 0xFF;
+	dataBin[35] = (index >> 8) & 0xFF;
+	dataBin[36] = index & 0xFF;
+
+	uint8_t out[64];
+	hmac_sha512(keyBin, dataBin, out);
+	memcpy(outchainCode, &out[32], 32);
+
+	//printf("SHA 512: %s\n", toHex(out, 64).c_str());
+
+
+	secp256k1_ec_pubkey_tweak_add(ctx, &pubkey, (const unsigned char*)&out[0]);
+
+	mp_number gx;
+	mp_number gy;
+
+	memcpy(&gx, GxCoord, sizeof(mp_number));
+	memcpy(&gy, GyCoord, sizeof(mp_number));
+
+	//printf("Gx: %016llx%016llx%016llx%016llx\n", gx.q[3], gx.q[2], gx.q[1], gx.q[0]);
+	//printf("Gy: %016llx%016llx%016llx%016llx\n", gy.q[3], gy.q[2], gy.q[1], gy.q[0]);
+
+
+	memcpy(&P, &pubkey, sizeof(point));
+
+
+	ethhash h = { { 0 } };
+
+
+	// Initialize Keccak structure with point coordinates in big endian
+	h.d[0] = bswap32(P.x.d[MP_WORDS - 1]);
+	h.d[1] = bswap32(P.x.d[MP_WORDS - 2]);
+	h.d[2] = bswap32(P.x.d[MP_WORDS - 3]);
+	h.d[3] = bswap32(P.x.d[MP_WORDS - 4]);
+	h.d[4] = bswap32(P.x.d[MP_WORDS - 5]);
+	h.d[5] = bswap32(P.x.d[MP_WORDS - 6]);
+	h.d[6] = bswap32(P.x.d[MP_WORDS - 7]);
+	h.d[7] = bswap32(P.x.d[MP_WORDS - 8]);
+	h.d[8] = bswap32(P.y.d[MP_WORDS - 1]);
+	h.d[9] = bswap32(P.y.d[MP_WORDS - 2]);
+	h.d[10] = bswap32(P.y.d[MP_WORDS - 3]);
+	h.d[11] = bswap32(P.y.d[MP_WORDS - 4]);
+	h.d[12] = bswap32(P.y.d[MP_WORDS - 5]);
+	h.d[13] = bswap32(P.y.d[MP_WORDS - 6]);
+	h.d[14] = bswap32(P.y.d[MP_WORDS - 7]);
+	h.d[15] = bswap32(P.y.d[MP_WORDS - 8]);
+	h.d[16] ^= 0x01; // length 64
+
+	cpu_sha3_keccakf(h);
+
+	// Save public address hash in pInverse, only used as interim storage until next cycle
+	ethaddress& addr = *(ethaddress*)&h.d[3];
+	if (cpu_scorer(addr, g_bip32_search_descr)) {
+		printf("Matched address: 0x%s, path: %s/%d \n", toHex(&addr.b[0], 20).c_str(), path.c_str(), index);
+
+		return true;
+	}
+	return false;
+}
+
+
+void derive_child(point pub, uint8_t chain_code[32], uint32_t index) {
+	//bip32_pub_key pub;
+
+	uint8_t compressed_pub_key[33];
+	compress_pubkey(compressed_pub_key, pub);
+
+	uint8_t keyBin[128] = { 0 };
+	uint8_t dataBin[37];
+
+	memcpy(keyBin, chain_code, 32);
+	memcpy(dataBin, compressed_pub_key, 33);
+    
+	dataBin[33] = (index >> 24) & 0xFF;
+    dataBin[34] = (index >> 16) & 0xFF;
+    dataBin[35] = (index >> 8) & 0xFF;
+    dataBin[36] = index & 0xFF;
+
+	uint8_t out[64];
+	hmac_sha512(keyBin, dataBin, out);
+
+	printf("SHA 512: %s", toHex(out, 64).c_str());
+
+
+	point p = pub;
+	mp_number scalar;
+	scalar.q[0] = swap64(*(uint64_t*)&out[0]);
+	scalar.q[1] = swap64(*(uint64_t*)&out[8]);
+	scalar.q[2] = swap64(*(uint64_t*)&out[16]);
+	scalar.q[3] = swap64(*(uint64_t*)&out[24]);
+
+	mp_number gx;
+	mp_number gy;
+
+	memcpy(&gx, GxCoord, sizeof(mp_number));
+	memcpy(&gy, GyCoord, sizeof(mp_number));
+
+	//printf("Gx: %016llx%016llx%016llx%016llx\n", gx.q[3], gx.q[2], gx.q[1], gx.q[0]);
+	//printf("Gy: %016llx%016llx%016llx%016llx\n", gy.q[3], gy.q[2], gy.q[1], gy.q[0]);
+
+	point G;
+	G.x = gx;
+	G.y = gy;
+	point P = { 0 };
+
+	//0010111100010101100111111111111011000001001111001100101110010111110011001010001010001101111010001000001110000010101110010011111010011010001001110011100111111110011111011011000010011010110110111100100111011111110010000111110000100111111010110001010101011111
+	//0010111100010101100111111111111011000001001111001100101110010111110011001010001010001101111010001000001110000010101110010011111010011010001001110011100111111110011111011011000010011010110110111100100111011111110010000111110000100111111010110001010101011111
+	//0010111100010101100111111111111011000001001111001100101110010111110011001010001010001101111010001000001110000010101110010011111010011010001001110011100111111110011111011011000010011010110110111100100111011111110010000111110000100111111010110001010101011111
+	/*mp_number scalar_one;
+	scalar_one.q[0] = 0;
+	scalar_one.q[1] = 0;
+	scalar_one.q[2] = 0;
+	scalar_one.q[3] = 2;*/
+
+	mp_point_mul(P, scalar, G);
+
+	//printf("p.x: %016llx%016llx%016llx%016llx\n", p.x.q[3], p.x.q[2], p.x.q[1], p.x.q[0]);
+	//printf("p.y: %016llx%016llx%016llx%016llx\n", p.y.q[3], p.y.q[2], p.y.q[1], p.y.q[0]);
+
+	point_add(P, P, p);
+
+	//printf("P.x: %016llx%016llx%016llx%016llx\n", P.x.q[3], P.x.q[2], P.x.q[1], P.x.q[0]);
+	//printf("P.y: %016llx%016llx%016llx%016llx\n", P.y.q[3], P.y.q[2], P.y.q[1], P.y.q[0]);
+
+
+	ethhash h = { { 0 } };
+
+
+	// Initialize Keccak structure with point coordinates in big endian
+	h.d[0] = bswap32(P.x.d[MP_WORDS - 1]);
+	h.d[1] = bswap32(P.x.d[MP_WORDS - 2]);
+	h.d[2] = bswap32(P.x.d[MP_WORDS - 3]);
+	h.d[3] = bswap32(P.x.d[MP_WORDS - 4]);
+	h.d[4] = bswap32(P.x.d[MP_WORDS - 5]);
+	h.d[5] = bswap32(P.x.d[MP_WORDS - 6]);
+	h.d[6] = bswap32(P.x.d[MP_WORDS - 7]);
+	h.d[7] = bswap32(P.x.d[MP_WORDS - 8]);
+	h.d[8] = bswap32(P.y.d[MP_WORDS - 1]);
+	h.d[9] = bswap32(P.y.d[MP_WORDS - 2]);
+	h.d[10] = bswap32(P.y.d[MP_WORDS - 3]);
+	h.d[11] = bswap32(P.y.d[MP_WORDS - 4]);
+	h.d[12] = bswap32(P.y.d[MP_WORDS - 5]);
+	h.d[13] = bswap32(P.y.d[MP_WORDS - 6]);
+	h.d[14] = bswap32(P.y.d[MP_WORDS - 7]);
+	h.d[15] = bswap32(P.y.d[MP_WORDS - 8]);
+	h.d[16] ^= 0x01; // length 64
+
+	cpu_sha3_keccakf(h);
+
+	// Save public address hash in pInverse, only used as interim storage until next cycle
+	ethaddress& addr = *(ethaddress*)&h.d[3];
+
+
+	printf("Address: 0x%s\n", toHex(&addr.b[0], 20).c_str());
+}
+
+
 void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip32_search_data *init_data)
 {
+	cpu_bip32_update_search_prefix(descr);
 	bip32_pub_key_compr compr;
 	for (int i = 0; i < public_key.size(); i++) {
         compr.data[i] = public_key[i];
@@ -1094,8 +1273,16 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	pub.child_num = *(uint32_t*)&raw[9];
 	memcpy(&pub.chain_code[0], &raw[13], 32);
 
+	point p1;
+	memcpy(&p1.x, &init_data->public_key_x, sizeof(mp_number));
+	memcpy(&p1.y, &init_data->public_key_y, sizeof(mp_number));
+	derive_child(p1, pub.chain_code, 0);
+	
 	uint8_t compressed_pub_key[33];
-	compress_pubkey(compressed_pub_key, pub);
+	point pub_point;
+	memcpy(&pub_point.x, &pub.public_key_x, sizeof(mp_number));
+	memcpy(&pub_point.y, &pub.public_key_y, sizeof(mp_number));
+	compress_pubkey(compressed_pub_key, pub_point);
 	if (memcmp(&raw[45], compressed_pub_key, 33) != 0) {
 		printf("Public key compression mismatch!\n");
 		printf("Compressed public key from raw  : %s\n", toHex(&raw[45], 33).c_str());
@@ -1169,6 +1356,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	scalar_one.q[1] = 0;
 	scalar_one.q[2] = 0;
 	scalar_one.q[3] = 2;*/
+	
 	mp_point_mul(P, scalar, G);
 
 	printf("p.x: %016llx%016llx%016llx%016llx\n", p.x.q[3], p.x.q[2], p.x.q[1], p.x.q[0]);
@@ -1179,6 +1367,36 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	printf("P.x: %016llx%016llx%016llx%016llx\n", P.x.q[3], P.x.q[2], P.x.q[1], P.x.q[0]);
 	printf("P.y: %016llx%016llx%016llx%016llx\n", P.y.q[3], P.y.q[2], P.y.q[1], P.y.q[0]);
 	 
+
+	ethhash h = { { 0 } };
+	
+
+	// Initialize Keccak structure with point coordinates in big endian
+	h.d[0] = bswap32(P.x.d[MP_WORDS - 1]);
+	h.d[1] = bswap32(P.x.d[MP_WORDS - 2]);
+	h.d[2] = bswap32(P.x.d[MP_WORDS - 3]);
+	h.d[3] = bswap32(P.x.d[MP_WORDS - 4]);
+	h.d[4] = bswap32(P.x.d[MP_WORDS - 5]);
+	h.d[5] = bswap32(P.x.d[MP_WORDS - 6]);
+	h.d[6] = bswap32(P.x.d[MP_WORDS - 7]);
+	h.d[7] = bswap32(P.x.d[MP_WORDS - 8]);
+	h.d[8] = bswap32(P.y.d[MP_WORDS - 1]);
+	h.d[9] = bswap32(P.y.d[MP_WORDS - 2]);
+	h.d[10] = bswap32(P.y.d[MP_WORDS - 3]);
+	h.d[11] = bswap32(P.y.d[MP_WORDS - 4]);
+	h.d[12] = bswap32(P.y.d[MP_WORDS - 5]);
+	h.d[13] = bswap32(P.y.d[MP_WORDS - 6]);
+	h.d[14] = bswap32(P.y.d[MP_WORDS - 7]);
+	h.d[15] = bswap32(P.y.d[MP_WORDS - 8]);
+	h.d[16] ^= 0x01; // length 64
+
+	cpu_sha3_keccakf(h);
+
+	// Save public address hash in pInverse, only used as interim storage until next cycle
+	ethaddress& addr = *(ethaddress*)&h.d[3];
+
+
+	printf("Address: 0x%s\n", toHex(&addr.b[0], 20).c_str());
 
 	//load into point
 	//point G;
@@ -1199,15 +1417,33 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 		return;
 	}
 
-	printf("Started hmac testing ..\n");
-	for (int64_t i = 1; i <= 10000; i++) {
-		if (i % 1000000 == 0) {
-			printf("Computed: %lldM\n", i / 1000000);
+	int32_t maxJ = 20;
+	printf("Started mul testing ..\n");
+	double startSecs = get_app_time_sec();
+	int64_t addresses_found = 0;
+	for (int64_t i = 0; i <= 1000000; i++) {
+		if (i % 10000 == 0) {
+			double curSecs = get_app_time_sec();
+			printf("Computed: %.02f MH, speed %.01f kH/s\n", (i * maxJ)/1000000.0, (i*maxJ)/(curSecs-startSecs) / 1000);
 			fflush(stdout);
 		}
-		if (!test_sha_512_hmac()) {
-			return;
+		point pNew;
+		uint8_t outchainCode[32];
+		uint32_t num = 100000 + get_next_random() % 2000000000;
+		if (derive_child2(p1, pNew, outchainCode, pub.chain_code, "m/44'/60'/719263497'", num)) {
+			// printf("Matched address: 0x%s\n", toHex(&addr.b[0], 20).c_str());
 		}
+        std::string path = "m/44'/60'/719263497'/" + std::to_string(num);
+		point pNew2;
+		uint8_t outchainCode2[32];
+		for (int64_t j = 0; j < maxJ; j++) {
+			if (derive_child2(pNew, pNew2, outchainCode2, outchainCode, path, j)) {
+				addresses_found += 1;
+
+		        printf("Number of addresses found: %lld\n", addresses_found);
+			}
+		}
+
 	}
 
 	printf("Started random compression testing ..\n");
