@@ -479,7 +479,19 @@ int main(int argc, char ** argv)
             if (bSearchBip32) {
                 LOG_INFO("Searching for private keys [CPU] for pubx: %s", publicKey.c_str());
                 
+                cl_ulong4 clGX = fromHexCLUlong(std::string("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"));
+                cl_ulong4 clGY = fromHexCLUlong(std::string("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8"));
+
                 //search for split
+                //6481385041966929816
+                //188021827762530521
+                //6170039885052185351
+                //8772561819708210092
+
+                //11261198710074299576
+                //18237243440184513561
+                //6747795201694173352
+                //5204712524664259685
 
 				int pos = publicKey.find("_") + 1;
                 if (pos == 0) {
