@@ -512,6 +512,8 @@ int main(int argc, char ** argv)
                     if (g_exiting) {
                         break;
                     }
+                    
+
                     cpu_bip32_data_search(publicKey, descr, &cpu_bip32_init_data);
                     break;
                     double end = get_app_time_sec();

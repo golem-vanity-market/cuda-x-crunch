@@ -1051,7 +1051,7 @@ bool test_sha_512_hmac_loop() {
 
 secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
-extern pattern_descriptor g_bip32_search_descr;
+pattern_descriptor g_bip32_search_descr;
 bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_code[32], std::string path, uint32_t index) {
 	//bip32_pub_key pub;
 
@@ -1134,7 +1134,8 @@ bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_co
 
 void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip32_search_data *init_data)
 {
-	cpu_bip32_update_search_prefix(descr);
+	g_bip32_search_descr = descr;
+
 	bip32_pub_key_compr compr;
 	for (int i = 0; i < public_key.size(); i++) {
         compr.data[i] = public_key[i];
@@ -1160,8 +1161,9 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 		return;
 	}
 
-	memcpy(&pub.public_key_x, &pubkey.data[0], sizeof(mp_number));
-	memcpy(&pub.public_key_y, &pubkey.data[32], sizeof(mp_number));
+	point rootPublicPoint;
+	memcpy(&rootPublicPoint.x, &pubkey.data[0], sizeof(mp_number));
+	memcpy(&rootPublicPoint.y, &pubkey.data[32], sizeof(mp_number));
 
 	memcpy(&pub.verification, &raw[78], 4);
 
@@ -1177,32 +1179,41 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 
 
 
+	int32_t maxJ = 10000;
+	int32_t maxK = 20;
 
-	int32_t maxJ = 20;
 	printf("Started mul testing ..\n");
 	double startSecs = get_app_time_sec();
 	int64_t addresses_found = 0;
+	std::string root_path = "%ROOT_PATH%/";
 	for (int64_t i = 0; i <= 1000000; i++) {
-		if (i % 10000 == 0) {
+		if (i > 0) {
 			double curSecs = get_app_time_sec();
-			printf("Computed: %.02f MH, speed %.01f kH/s\n", (i * maxJ)/1000000.0, (i*maxJ)/(curSecs-startSecs) / 1000);
+			printf("Computed: %.02f MH, speed %.01f kH/s\n", (i * maxJ * maxK)/1000000.0, (i * maxJ * maxK)/(curSecs-startSecs) / 1000);
 			fflush(stdout);
 		}
-		point pNew;
+		point pDerived;
 		uint8_t outchainCode[32];
 		uint32_t num = 100000 + get_next_random() % 2000000000;
-		if (derive_child2(p1, pNew, outchainCode, pub.chain_code, "m/44'/60'/719263497'", num)) {
+		if (derive_child2(rootPublicPoint, pDerived, outchainCode, pub.chain_code, root_path, num)) {
 			// printf("Matched address: 0x%s\n", toHex(&addr.b[0], 20).c_str());
 		}
-        std::string path = "%PRIVATE_PATH%/" + std::to_string(num);
-		point pNew2;
+        std::string path = root_path + std::to_string(num);
+		point pDerived2;
 		uint8_t outchainCode2[32];
 		for (int64_t j = 0; j < maxJ; j++) {
-			if (derive_child2(pNew, pNew2, outchainCode2, outchainCode, path, j)) {
-				addresses_found += 1;
+			uint32_t num2 = 100000 + get_next_random() % 2000000000;
+			derive_child2(pDerived, pDerived2, outchainCode2, outchainCode, path, num2);
+			uint8_t outchainCode3[32];
+			point pDerived3;
 
-		        printf("Number of addresses found: %lld\n", addresses_found);
+			for (int32_t k = 0; k < maxK; k++) {
+				if (derive_child2(pDerived2, pDerived3, outchainCode3, outchainCode2, path + "/" + std::to_string(num2), k)) {
+					addresses_found += 1;
+					printf("Number of addresses found: %lld\n", addresses_found);
+				}
 			}
+
 		}
 
 	}

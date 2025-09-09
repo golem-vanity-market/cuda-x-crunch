@@ -34,8 +34,6 @@ struct bip32_pub_key {
     uint8_t chain_code[32];
     uint8_t compressed_key[33];
 	uint8_t verification[4];
-    cl_ulong4 public_key_x;
-    cl_ulong4 public_key_y;
 };
 
 
