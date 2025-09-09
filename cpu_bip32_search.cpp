@@ -1160,14 +1160,14 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 
 
 
-	int32_t maxJ = 10000;
-	int32_t maxK = 20;
+	int32_t maxJ = init_data->rounds;
+	int32_t maxK = init_data->kernel_group_size;
 
 	printf("Started mul testing ..\n");
 	double startSecs = get_app_time_sec();
 	int64_t addresses_found = 0;
 	std::string root_path = "%ROOT_PATH%/";
-	for (int64_t i = 0; i <= 1000000; i++) {
+	for (int64_t i = 0; i <= init_data->kernel_groups; i++) {
 		if (i > 0) {
 			double curSecs = get_app_time_sec();
 			printf("Computed: %.02f MH, speed %.01f kH/s\n", (i * maxJ * maxK)/1000000.0, (i * maxJ * maxK)/(curSecs-startSecs) / 1000);
