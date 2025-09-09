@@ -1,13 +1,15 @@
 
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 include(FetchContent)
+set(SECP256K1_ECMULT_WINDOW_SIZE 17 CACHE STRING "Window size for ecmult precomputation")
 
 FetchContent_Declare(
   secp256k1
-  GIT_REPOSITORY https://github.com/bitcoin-core/secp256k1.git
+  GIT_REPOSITORY https://github.com/scx1332/secp256k1.git
   GIT_TAG master
 )
 FetchContent_MakeAvailable(secp256k1)
+
 
 project(profanity_cuda LANGUAGES CXX CUDA)
 
@@ -22,7 +24,6 @@ add_executable(profanity_cuda
   private_key.cu
   private_key.h
   private_key_search.cpp
-  bip32.cu
   bip32.h
   bip32_extras.cpp
   bip32_search.cpp

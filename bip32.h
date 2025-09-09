@@ -8,8 +8,6 @@
 #define RESULTS_ARRAY_SIZE 250000
 
 struct bip32_search_data {
-    cl_ulong4 public_key_x;
-    cl_ulong4 public_key_y;
     cl_ulong4 seed;
     int rounds;
     int kernel_group_size;
@@ -41,7 +39,7 @@ struct bip32_pub_key {
 };
 
 
-
+/*
 void update_bip32_key(mp_number const& x, mp_number const& y);
 void bip32_update_search_prefix(pattern_descriptor pref);
 void bip32_data_init(bip32_search_data* init_data);
@@ -50,7 +48,7 @@ void bip32_data_destroy(bip32_search_data* init_data);
 void run_kernel_bip32_search(bip32_search_data* data);
 
 salt bip32_generate_random_salt();
-
+*/
 
 void cpu_update_bip32_key(mp_number const& x, mp_number const& y);
 void cpu_bip32_update_search_prefix(pattern_descriptor pref);
