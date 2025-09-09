@@ -1112,9 +1112,10 @@ bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_co
 
 
 
-bool showInfo = true;
+bool showInfoFirstLoop = true;
 double startSecs = get_app_time_sec();
 int64_t addresses_found = 0;
+int64_t g_total_compute = 0;
 
 void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip32_search_data *init_data)
 {
@@ -1152,7 +1153,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	memcpy(&pub.verification, &raw[78], 4);
 
 	
-	if (showInfo) {
+	if (showInfoFirstLoop) {
 		printf("BIP32 root xpub key details:\n");
 		printf(" Version       : 0x%08x\n", bswap32(pub.version));
 		printf(" Depth         : %d\n", pub.depth);
@@ -1161,21 +1162,15 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 		printf(" Chain code    : %s\n", toHex(pub.chain_code, 32).c_str());
 		printf(" Compressed key: %s\n", toHex(&raw[45], 33).c_str());
 		printf(" Verification  : %s\n", toHex(pub.verification, 4).c_str());
-		showInfo = false;
+		showInfoFirstLoop = false;
 	}
-
-
 
 	int32_t maxJ = init_data->rounds;
 	int32_t maxK = init_data->kernel_group_size;
 
 	std::string root_path = "%ROOT_PATH%/";
 	for (int64_t i = 0; i <= init_data->kernel_groups; i++) {
-		if (i > 0) {
-			double curSecs = get_app_time_sec();
-			printf("Computed: %.02f MH, speed %.01f kH/s\n", (i * maxJ * maxK)/1000000.0, (i * maxJ * maxK)/(curSecs-startSecs) / 1000);
-			fflush(stdout);
-		}
+		
 		point pDerived;
 		uint8_t outchainCode[32];
 		uint32_t num = 100000 + get_next_random() % 2000000000;
@@ -1197,17 +1192,11 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 					printf("Number of addresses found: %lld\n", (long long int)addresses_found);
 				}
 			}
-
 		}
+		g_total_compute += (i * maxJ * maxK);
+		double curSecs = get_app_time_sec();
+		printf("Computed: %.02f MH, speed %.01f kH/s\n", g_total_compute / 1000000.0, g_total_compute / (curSecs - startSecs) / 1000);
+		fflush(stdout);
 
-	}
-
-	printf("Started random compression testing ..\n");
-	for (int64_t i = 1; i <= 10000; i++) {
-		if (i % 1000000 == 0) {
-			printf("Computed: %lldM\n", (long long int) i / 1000000);
-			fflush(stdout);
-		}
-		random_encoding_test();
 	}
 }
