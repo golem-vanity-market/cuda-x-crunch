@@ -1169,7 +1169,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	int32_t maxK = init_data->kernel_group_size;
 
 	std::string root_path = "%ROOT_PATH%/";
-	for (int64_t i = 0; i <= init_data->kernel_groups; i++) {
+	for (int64_t i = 0; i < init_data->kernel_groups; i++) {
 		
 		point pDerived;
 		uint8_t outchainCode[32];
@@ -1193,7 +1193,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 				}
 			}
 		}
-		g_total_compute += (i * maxJ * maxK);
+		g_total_compute += maxJ * maxK;
 		double curSecs = get_app_time_sec();
 		printf("Computed: %.02f MH, speed %.01f kH/s\n", g_total_compute / 1000000.0, g_total_compute / (curSecs - startSecs) / 1000);
 		fflush(stdout);
