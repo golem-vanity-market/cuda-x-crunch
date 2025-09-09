@@ -1112,6 +1112,9 @@ bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_co
 
 
 
+bool showInfo = true;
+double startSecs = get_app_time_sec();
+int64_t addresses_found = 0;
 
 void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip32_search_data *init_data)
 {
@@ -1149,23 +1152,23 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	memcpy(&pub.verification, &raw[78], 4);
 
 	
-	printf("BIP32 root xpub key details:\n");
-	printf(" Version       : 0x%08x\n", bswap32(pub.version));
-	printf(" Depth         : %d\n", pub.depth);
-	printf(" Parent fpr    : 0x%08x\n", bswap32(pub.parent_fpr));
-	printf(" Child num     : %u\n", bswap32(pub.child_num));
-	printf(" Chain code    : %s\n", toHex(pub.chain_code, 32).c_str());
-	printf(" Compressed key: %s\n", toHex(&raw[45], 33).c_str());
-	printf(" Verification  : %s\n", toHex(pub.verification, 4).c_str());
+	if (showInfo) {
+		printf("BIP32 root xpub key details:\n");
+		printf(" Version       : 0x%08x\n", bswap32(pub.version));
+		printf(" Depth         : %d\n", pub.depth);
+		printf(" Parent fpr    : 0x%08x\n", bswap32(pub.parent_fpr));
+		printf(" Child num     : %u\n", bswap32(pub.child_num));
+		printf(" Chain code    : %s\n", toHex(pub.chain_code, 32).c_str());
+		printf(" Compressed key: %s\n", toHex(&raw[45], 33).c_str());
+		printf(" Verification  : %s\n", toHex(pub.verification, 4).c_str());
+		showInfo = false;
+	}
 
 
 
 	int32_t maxJ = init_data->rounds;
 	int32_t maxK = init_data->kernel_group_size;
 
-	printf("Started mul testing ..\n");
-	double startSecs = get_app_time_sec();
-	int64_t addresses_found = 0;
 	std::string root_path = "%ROOT_PATH%/";
 	for (int64_t i = 0; i <= init_data->kernel_groups; i++) {
 		if (i > 0) {
