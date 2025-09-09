@@ -1202,7 +1202,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 	printf("Started random compression testing ..\n");
 	for (int64_t i = 1; i <= 10000; i++) {
 		if (i % 1000000 == 0) {
-			printf("Computed: %lldM\n", i / 1000000);
+			printf("Computed: %lldM\n", (long long int) i / 1000000);
 			fflush(stdout);
 		}
 		random_encoding_test();
