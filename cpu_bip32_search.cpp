@@ -1080,7 +1080,12 @@ bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_co
 	//printf("SHA 512: %s\n", toHex(out, 64).c_str());
 
 
-	secp256k1_ec_pubkey_tweak_add(ctx, &pubkey, (const unsigned char*)&out[0]);
+	const int success = secp256k1_ec_pubkey_tweak_add(ctx, &pubkey, (const unsigned char*)&out[0]);
+	if (!success) {
+		// invalid key
+		fprintf(stderr, "Tweak add failed\n");
+		return false;
+	}
 
 	mp_number gx;
 	mp_number gy;

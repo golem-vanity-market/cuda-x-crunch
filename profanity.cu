@@ -287,7 +287,6 @@ int main(int argc, char ** argv)
         return 0;
     }
     
-    bool isPublicKeyPubX = false;
     bool lookForPrivateKeys = false;
     if (publicKey.size() > 0) {
 
