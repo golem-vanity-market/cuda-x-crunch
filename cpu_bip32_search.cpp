@@ -1154,14 +1154,14 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 
 	
 	if (showInfoFirstLoop) {
-		printf("BIP32 root xpub key details:\n");
-		printf(" Version       : 0x%08x\n", bswap32(pub.version));
-		printf(" Depth         : %d\n", pub.depth);
-		printf(" Parent fpr    : 0x%08x\n", bswap32(pub.parent_fpr));
-		printf(" Child num     : %u\n", bswap32(pub.child_num));
-		printf(" Chain code    : %s\n", toHex(pub.chain_code, 32).c_str());
-		printf(" Compressed key: %s\n", toHex(&raw[45], 33).c_str());
-		printf(" Verification  : %s\n", toHex(pub.verification, 4).c_str());
+		fprintf(stderr, "BIP32 root xpub key details:\n");
+		fprintf(stderr, " Version       : 0x%08x\n", bswap32(pub.version));
+		fprintf(stderr, " Depth         : %d\n", pub.depth);
+		fprintf(stderr, " Parent fpr    : 0x%08x\n", bswap32(pub.parent_fpr));
+		fprintf(stderr, " Child num     : %u\n", bswap32(pub.child_num));
+		fprintf(stderr, " Chain code    : %s\n", toHex(pub.chain_code, 32).c_str());
+		fprintf(stderr, " Compressed key: %s\n", toHex(&raw[45], 33).c_str());
+		fprintf(stderr, " Verification  : %s\n", toHex(pub.verification, 4).c_str());
 		showInfoFirstLoop = false;
 	}
 
@@ -1189,13 +1189,13 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 			for (int32_t k = 0; k < maxK; k++) {
 				if (derive_child2(pDerived2, pDerived3, outchainCode3, outchainCode2, path + "/" + std::to_string(num2), k)) {
 					addresses_found += 1;
-					printf("Number of addresses found: %lld\n", (long long int)addresses_found);
+					fprintf(stderr, "Number of addresses found: %lld\n", (long long int)addresses_found);
 				}
 			}
 		}
 		g_total_compute += maxJ * maxK;
 		double curSecs = get_app_time_sec();
-		printf("Computed: %.02f MH, speed %.01f kH/s\n", g_total_compute / 1000000.0, g_total_compute / (curSecs - startSecs) / 1000);
+		fprintf(stderr, "Computed: %.02f MH, speed %.01f kH/s\n", g_total_compute / 1000000.0, g_total_compute / (curSecs - startSecs) / 1000);
 		fflush(stdout);
 
 	}
