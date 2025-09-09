@@ -1127,7 +1127,7 @@ bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_co
 	// Save public address hash in pInverse, only used as interim storage until next cycle
 	ethaddress& addr = *(ethaddress*)&h.d[3];
 	if (cpu_scorer(addr, g_bip32_search_descr)) {
-		printf("Matched address: 0x%s, path: %s/%d \n", toHex(&addr.b[0], 20).c_str(), path.c_str(), index);
+		printf("Matched address: 0x%s, path: %s/%d\n", toHex(&addr.b[0], 20).c_str(), path.c_str(), index);
 
 		return true;
 	}
@@ -1215,7 +1215,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 			for (int32_t k = 0; k < maxK; k++) {
 				if (derive_child2(pDerived2, pDerived3, outchainCode3, outchainCode2, path + "/" + std::to_string(num2), k)) {
 					addresses_found += 1;
-					printf("Number of addresses found: %lld\n", addresses_found);
+					printf("Number of addresses found: %lld\n", (long long int)addresses_found);
 				}
 			}
 
