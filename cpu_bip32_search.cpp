@@ -906,30 +906,6 @@ static void fromHex(const std::string& hex, uint8_t* out, size_t outLen) {
 	}
 }
 
-static void printResult(std::string public_key, cl_ulong4 seed, uint64_t round, search_result r, bip32_search_data *init_data) {
-
-	// Format private key
-	uint64_t carry = 0;
-	cl_ulong4 seedRes;
-
-	seedRes.s[0] = seed.s[0] + round; carry = seedRes.s[0] < round;
-	seedRes.s[1] = seed.s[1] + carry; carry = !seedRes.s[1];
-	seedRes.s[2] = seed.s[2] + carry; carry = !seedRes.s[2];
-	seedRes.s[3] = seed.s[3] + carry + r.id;
-
-	std::ostringstream ss;
-	ss << std::hex << std::setfill('0');
-	ss << std::setw(16) << seedRes.s[3] << std::setw(16) << seedRes.s[2] << std::setw(16) << seedRes.s[1] << std::setw(16) << seedRes.s[0];
-	const std::string strPrivate = ss.str();
-
-	// Format public key
-	const std::string strPublic = toHex(r.addr, 20);
-
-	// Print
-    printf("0x%s,0x%s,0x%s,%s_%llu\n", strPrivate.c_str(), strPublic.c_str(), public_key.c_str(), g_strVersion.c_str(), (uint64_t)(init_data->total_compute / 1000 / 1000 / 1000));
-}
-
-
 void random_encoding_test() {
 	uint8_t raw[82];
 	for (int i = 0; i < 82; i++) {
@@ -1033,7 +1009,7 @@ bool test_sha_512_hmac_loop() {
 
 	for (int64_t i = 1; i <= 1000; i++) {
 		if (i % 1000000 == 0) {
-			printf("Computed: %lldM\n", i / 1000000);
+			printf("Computed: %lldM\n", (long long int) (i / 1000000));
 			fflush(stdout);
 		}
 		uint8_t out[64];
