@@ -26,6 +26,7 @@
  */
 #include "create3.h"
 #include "private_key.h"
+#include "bip32.h"
 #include "help.hpp"
 #include "utils.hpp"
 #include "ArgParser.hpp"
@@ -341,6 +342,7 @@ int main(int argc, char ** argv)
         std::cout << g_strVersion;
         return 0;
     }
+    
     bool lookForPrivateKeys = false;
     if (publicKey.size() > 0) {
 
@@ -527,52 +529,106 @@ int main(int argc, char ** argv)
         }
     } else {
         if (bUseCPU) {
-            LOG_INFO("Searching for private keys [CPU] for public key: %s", publicKey.c_str());
-            //load public key into variables
-            if (publicKey.size() != 128) {
-                std::cout << "error: bad public key" << std::endl;
-                return 1;
-            }
-            cl_ulong4 clSeedX = fromHexCLUlong(publicKey.substr(0, 64));
-            cl_ulong4 clSeedY = fromHexCLUlong(publicKey.substr(64, 64));
+			bool bSearchBip32 = publicKey.substr(0, 4) == "xpub";
 
-            LOG_INFO("Public key SeedX: %llu %llu %llu %llu\n", clSeedX.s0, clSeedX.s1, clSeedX.s2, clSeedX.s3);
-            LOG_INFO("Public key SeedY: %llu %llu %llu %llu\n", clSeedY.s0, clSeedY.s1, clSeedY.s2, clSeedY.s3);
+            if (bSearchBip32) {
+                LOG_INFO("Searching for private keys [CPU] for pubx: %s", publicKey.c_str());
+                
+                
+                //search for split
+                //6481385041966929816
+                //188021827762530521
+                //6170039885052185351
+                //8772561819708210092
 
+                //11261198710074299576
+                //18237243440184513561
+                //6747795201694173352
+                //5204712524664259685
 
-            private_search_data cpu_init_data;
-            cpu_init_data.rounds = rounds;
-            cpu_init_data.kernel_group_size = kernelSize;
-            cpu_init_data.kernel_groups = groups;
-            cpu_init_data.public_key_x = clSeedX;
-            cpu_init_data.public_key_y = clSeedY;
+				
+                bip32_search_data cpu_bip32_init_data;
+                cpu_bip32_init_data.rounds = rounds;
+                cpu_bip32_init_data.kernel_group_size = kernelSize;
+                cpu_bip32_init_data.kernel_groups = groups;
+                
+                memset(&cpu_bip32_init_data.seed, 0, sizeof(cpu_bip32_init_data.seed));
 
-            memset(&cpu_init_data.seed, 0, sizeof(cpu_init_data.seed));
+                //LOG_INFO("Factory address: 0x%s", init_data.factory);
+                //LOG_INFO("Output directory: %s", init_data.outputDir);
+                LOG_INFO("Kernel size: %d", cpu_bip32_init_data.kernel_group_size);
+                LOG_INFO("Groups: %d", cpu_bip32_init_data.kernel_groups);
 
-            //LOG_INFO("Factory address: 0x%s", init_data.factory);
-            //LOG_INFO("Output directory: %s", init_data.outputDir);
-            LOG_INFO("Kernel size: %d", cpu_init_data.kernel_group_size);
-            LOG_INFO("Groups: %d", cpu_init_data.kernel_groups);
+                cpu_bip32_data_init(&cpu_bip32_init_data);
 
-            cpu_private_data_init(&cpu_init_data);
+                double start = get_app_time_sec();
+                uint64_t loop_no = 0;
+                while (true) {
+                    if (g_exiting) {
+                        break;
+                    }
+                    
 
-            double start = get_app_time_sec();
-            uint64_t loop_no = 0;
-            while(true) {
-                if (g_exiting) {
-                    break;
+                    cpu_bip32_data_search(publicKey, descr, &cpu_bip32_init_data);
+                    double end = get_app_time_sec();
+                    if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)
+                        || (benchmarkLimitLoops > 0 && loop_no + 1 >= benchmarkLimitLoops)) {
+                        break;
+                    }
+                    loop_no += 1;
                 }
-                cpu_private_data_search(publicKey, descr, &cpu_init_data);
-                double end = get_app_time_sec();
-                if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)
-                    || (benchmarkLimitLoops > 0 && loop_no + 1 >= benchmarkLimitLoops)) {
-                    break;
-                }
-                loop_no += 1;
-            }
 
-            cpu_private_data_destroy(&cpu_init_data);
-            return 0;
+                cpu_bip32_data_destroy(&cpu_bip32_init_data);
+                return 0;
+            }
+            else {
+                LOG_INFO("Searching for private keys [CPU] for public key: %s", publicKey.c_str());
+                //load public key into variables
+                if (publicKey.size() != 128) {
+                    std::cout << "error: bad public key" << std::endl;
+                    return 1;
+                }
+                cl_ulong4 clSeedX = fromHexCLUlong(publicKey.substr(0, 64));
+                cl_ulong4 clSeedY = fromHexCLUlong(publicKey.substr(64, 64));
+
+                LOG_INFO("Public key SeedX: %llu %llu %llu %llu\n", clSeedX.s0, clSeedX.s1, clSeedX.s2, clSeedX.s3);
+                LOG_INFO("Public key SeedY: %llu %llu %llu %llu\n", clSeedY.s0, clSeedY.s1, clSeedY.s2, clSeedY.s3);
+
+
+                private_search_data cpu_init_data;
+                cpu_init_data.rounds = rounds;
+                cpu_init_data.kernel_group_size = kernelSize;
+                cpu_init_data.kernel_groups = groups;
+                cpu_init_data.public_key_x = clSeedX;
+                cpu_init_data.public_key_y = clSeedY;
+
+                memset(&cpu_init_data.seed, 0, sizeof(cpu_init_data.seed));
+
+                //LOG_INFO("Factory address: 0x%s", init_data.factory);
+                //LOG_INFO("Output directory: %s", init_data.outputDir);
+                LOG_INFO("Kernel size: %d", cpu_init_data.kernel_group_size);
+                LOG_INFO("Groups: %d", cpu_init_data.kernel_groups);
+
+                cpu_private_data_init(&cpu_init_data);
+
+                double start = get_app_time_sec();
+                uint64_t loop_no = 0;
+                while (true) {
+                    if (g_exiting) {
+                        break;
+                    }
+                    cpu_private_data_search(publicKey, descr, &cpu_init_data);
+                    double end = get_app_time_sec();
+                    if ((benchmarkLimitTime > 0 && (end - start) > benchmarkLimitTime)
+                        || (benchmarkLimitLoops > 0 && loop_no + 1 >= benchmarkLimitLoops)) {
+                        break;
+                    }
+                    loop_no += 1;
+                }
+
+                cpu_private_data_destroy(&cpu_init_data);
+                return 0;
+            }
         } else {
             LOG_INFO("Searching for private keys for public key: %s", publicKey.c_str());
             //load public key into variables

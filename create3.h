@@ -61,13 +61,11 @@ struct pattern_descriptor {
     bool use_mask;
 };
 
-void load_seed_to_device(salt *seed_data);
 void load_factory_to_device(const char* factory);
 void create3_data_init(create3_search_data* data);
 void create3_data_destroy(create3_search_data* data);
 void create3_search(create3_search_data* factory, pattern_descriptor descr);
 
-void cpu_load_seed_to_device(salt *seed_data);
 void cpu_load_factory_to_device(const char* factory);
 void cpu_create3_data_init(create3_search_data* data);
 void cpu_create3_data_destroy(create3_search_data* data);
