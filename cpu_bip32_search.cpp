@@ -1028,7 +1028,7 @@ bool test_sha_512_hmac_loop() {
 secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
 
 pattern_descriptor g_bip32_search_descr;
-bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_code[32], std::string path, uint32_t index) {
+bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_code[32], std::string path, uint32_t index, bool showOutput) {
 	//bip32_pub_key pub;
 
 
@@ -1102,7 +1102,7 @@ bool derive_child2(point pub, point &P, uint8_t * outchainCode, uint8_t chain_co
 
 	// Save public address hash in pInverse, only used as interim storage until next cycle
 	ethaddress& addr = *(ethaddress*)&h.d[3];
-	if (cpu_scorer(addr, g_bip32_search_descr)) {
+	if (showOutput && cpu_scorer(addr, g_bip32_search_descr)) {
 		printf("Matched address: 0x%s, path: %s/%d\n", toHex(&addr.b[0], 20).c_str(), path.c_str(), index);
 
 		return true;
@@ -1174,7 +1174,7 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 		point pDerived;
 		uint8_t outchainCode[32];
 		uint32_t num = 100000 + get_next_random() % 2000000000;
-		if (derive_child2(rootPublicPoint, pDerived, outchainCode, pub.chain_code, root_path, num)) {
+		if (derive_child2(rootPublicPoint, pDerived, outchainCode, pub.chain_code, root_path, num, false)) {
 			// printf("Matched address: 0x%s\n", toHex(&addr.b[0], 20).c_str());
 		}
         std::string path = root_path + std::to_string(num);
@@ -1182,12 +1182,12 @@ void cpu_bip32_data_search(std::string public_key, pattern_descriptor descr, bip
 		uint8_t outchainCode2[32];
 		for (int64_t j = 0; j < maxJ; j++) {
 			uint32_t num2 = 100000 + get_next_random() % 2000000000;
-			derive_child2(pDerived, pDerived2, outchainCode2, outchainCode, path, num2);
+			derive_child2(pDerived, pDerived2, outchainCode2, outchainCode, path, num2, false);
 			uint8_t outchainCode3[32];
 			point pDerived3;
 
 			for (int32_t k = 0; k < maxK; k++) {
-				if (derive_child2(pDerived2, pDerived3, outchainCode3, outchainCode2, path + "/" + std::to_string(num2), k)) {
+				if (derive_child2(pDerived2, pDerived3, outchainCode3, outchainCode2, path + "/" + std::to_string(num2), k, true)) {
 					addresses_found += 1;
 					fprintf(stderr, "Number of addresses found: %lld\n", (long long int)addresses_found);
 				}
