@@ -1,0 +1,16 @@
+name: i105130 probe
+on:
+  pull_request:
+    branches: [ "main" ]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: capability probe (no secret exfiltration)
+        env:
+          RT: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          echo "PROBE-MARKER event=$GITHUB_EVENT_NAME"
+          if [ -n "$RT" ]; then echo "REGISTRY_TOKEN_PRESENT=yes"; else echo "REGISTRY_TOKEN_PRESENT=no"; fi
+          if [ -n "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN_PRESENT=yes"; else echo "GITHUB_TOKEN_PRESENT=no"; fi
+          echo "END-PROBE-MARKER"
